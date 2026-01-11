@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wheelbot-dataset"
+version = "0.1.0"
+description = "A package for recording and using wheelbot experiment data"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Wheelbot Team"}
+]
+keywords = ["robotics", "dataset", "wheelbot", "experiment", "recording"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "paramiko",
+    "fire",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "scipy",
+]
+all = [
+    "scipy",
+    "jax",
+    "jaxlib",
+    "equinox",
+    "optax",
+]
+
+[project.scripts]
+wheelbot-record = "wheelbot_dataset.__main__:main"
+wheelbot-example = "wheelbot_dataset.example_usage:example_usage"
+
+[project.urls]
+Homepage = "https://github.com/wheelbot/dataset"
+Repository = "https://github.com/wheelbot/dataset"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["wheelbot_dataset*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json"]

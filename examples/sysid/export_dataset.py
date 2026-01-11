@@ -1,9 +1,13 @@
 import numpy as np
-import sys
+import pickle
+import os
 
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent / "../../"))
-from dataset import *
+from wheelbot_dataset import (
+    Dataset,
+    plot_timeseries,
+    plot_histograms,
+    to_prediction_dataset,
+)
 
 def example_usage():
     # Load a dataset
@@ -244,6 +248,7 @@ def roll():
     print(f"States shape: {states.shape}")
     print(f"Actions shape: {actions.shape}")
     print(f"Next states shape: {nextstates.shape}")
+    os.makedirs("dataset", exist_ok=True)
     with open("dataset/roll.pkl", "wb") as f:
         pickle.dump({
             "states": states,
@@ -402,6 +407,6 @@ def export_vrp():
 if __name__=="__main__":
     # example_vrp()
     roll()
-    # pitch()
+    pitch()
     
     

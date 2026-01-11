@@ -6,15 +6,10 @@ and their velocities from IMU measurements (gyroscopes and accelerometers) and
 motor encoder data.
 """
 
-import sys
 import os
-
-# Add parent directory to path to import dataset module
-sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-
 import numpy as np
 import matplotlib.pyplot as plt
-from dataset import Dataset
+from wheelbot_dataset import Dataset
 from matplotlib.backends.backend_pdf import PdfPages
 
 
