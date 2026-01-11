@@ -15,7 +15,13 @@ from wheelbot_dataset.recording.experiment import (
 from wheelbot_dataset.recording.prb_sequences import (
     generate_setpoints,
     convert_yaw_setpoints_to_deltas,
-    generate_yaw_prbs
+    generate_yaw_prbs,
+)
+
+from wheelbot_dataset.recording.geometry_sequences import (
+    generate_circle_trajectory,
+    generate_figure_eight_trajectory,
+    convert_absolute_yaw_to_deltas,
 )
 
 from wheelbot_dataset.recording.utils import (
@@ -34,6 +40,9 @@ __all__ = [
     "generate_setpoints",
     "convert_yaw_setpoints_to_deltas",
     "generate_yaw_prbs",
+    "generate_circle_trajectory",
+    "generate_figure_eight_trajectory",
+    "convert_absolute_yaw_to_deltas",
     "next_log_number",
     "continue_skip_abort",
     "plot_csv_preview",

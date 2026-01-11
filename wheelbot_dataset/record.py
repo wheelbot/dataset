@@ -25,6 +25,9 @@ from wheelbot_dataset.recording.experiment import plot_and_run_with_repeat
 from wheelbot_dataset.recording.prb_sequences import (
     generate_setpoints, convert_yaw_setpoints_to_deltas, generate_yaw_prbs
 )
+from wheelbot_dataset.recording.geometry_sequences import (
+    generate_circle_trajectory, generate_figure_eight_trajectory, convert_absolute_yaw_to_deltas
+)
 from wheelbot_dataset.recording.utils import (
     next_log_number, continue_skip_abort
 )
@@ -286,6 +289,180 @@ def yaw(yaw_range_deg=90, duration_s=30.0, wheelbot_name=default_wheelbot_name, 
         )
 
 
+def yaw_figure_circle(radius=1.0, velocity=0.2, repetitions=2, wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
+    """
+    Run yaw experiments following a circular trajectory.
+    
+    The robot will follow a circular path by commanding appropriate yaw and velocity setpoints.
+    
+    Args:
+        radius: Radius of the circle in meters (default: 1.0)
+        velocity: Constant forward velocity in m/s (default: 0.2)
+        repetitions: Number of times to repeat the circle trajectory (default: 2)
+        wheelbot_name: Name of the wheelbot to use
+        surface: Surface type for metadata
+        video_device: Video device for recording
+    """
+    for seed in range(5):
+        print(f"Yaw circle experiment: radius={radius}m, velocity={velocity}m/s, repetitions={repetitions}, run={seed}")
+        if not continue_skip_abort():
+            continue
+        
+        path = next_log_number(f"data/yaw_circle")
+        dt = 0.05
+        
+        # Generate circular trajectory (returns x, y, yaw, vel, time)
+        x, y, yaw_setpoints, velocity_setpoints, time_arr = generate_circle_trajectory(radius=radius, velocity=velocity, dt=dt)
+        
+        # Repeat the trajectory N times
+        if repetitions > 1:
+            x = np.tile(x, repetitions)
+            y = np.tile(y, repetitions)
+            yaw_setpoints = np.tile(yaw_setpoints, repetitions)
+            velocity_setpoints = np.tile(velocity_setpoints, repetitions)
+            time_arr = np.arange(len(x)) * dt
+        
+        # Display trajectory and setpoints
+        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+        
+        # XY trajectory plot
+        axes[0, 0].plot(x, y, 'b-', linewidth=2)
+        axes[0, 0].plot(x[0], y[0], 'go', markersize=10, label='Start')
+        axes[0, 0].plot(x[-1], y[-1], 'ro', markersize=10, label='End')
+        axes[0, 0].set_xlabel('X [m]')
+        axes[0, 0].set_ylabel('Y [m]')
+        axes[0, 0].set_title(f'Circle Trajectory (radius={radius}m)')
+        axes[0, 0].axis('equal')
+        axes[0, 0].grid(True)
+        axes[0, 0].legend()
+        
+        # Yaw setpoints
+        axes[0, 1].plot(time_arr, yaw_setpoints)
+        axes[0, 1].set_xlabel('Time [s]')
+        axes[0, 1].set_ylabel('Yaw [deg]')
+        axes[0, 1].set_title('Yaw Setpoints')
+        axes[0, 1].grid(True)
+        
+        # Velocity setpoints
+        axes[1, 0].plot(time_arr, velocity_setpoints)
+        axes[1, 0].set_xlabel('Time [s]')
+        axes[1, 0].set_ylabel('Velocity [m/s]')
+        axes[1, 0].set_title('Velocity Setpoints')
+        axes[1, 0].grid(True)
+        
+        # Convert absolute yaw to delta angles for transmission
+        yaw_deltas = convert_absolute_yaw_to_deltas(yaw_setpoints, dt)
+        
+        axes[1, 1].plot(time_arr, yaw_deltas)
+        axes[1, 1].set_xlabel('Time [s]')
+        axes[1, 1].set_ylabel('Yaw Delta [deg]')
+        axes[1, 1].set_title('Yaw Delta Commands (sent to robot)')
+        axes[1, 1].grid(True)
+        
+        plt.tight_layout()
+        plt.show()
+        
+        # Zero roll and pitch for yaw experiments
+        roll = np.zeros_like(yaw_deltas)
+        pitch = np.zeros_like(yaw_deltas)
+        
+        plot_and_run_with_repeat(
+            velocity_setpoints, roll, pitch, time_arr, dt,
+            wheelbot_name=wheelbot_name,
+            surface=surface,
+            video_device=video_device,
+            path=path,
+            yaw_delta=yaw_deltas
+        )
+
+
+def yaw_figure_eight(size=1.0, velocity=0.2, repetitions=2, wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
+    """
+    Run yaw experiments following a figure-eight trajectory.
+    
+    The robot will follow a figure-eight path by commanding appropriate yaw and velocity setpoints.
+    
+    Args:
+        size: Size parameter for the figure-eight in meters (default: 1.0)
+        velocity: Constant forward velocity in m/s (default: 0.2)
+        repetitions: Number of times to repeat the figure-eight trajectory (default: 2)
+        wheelbot_name: Name of the wheelbot to use
+        surface: Surface type for metadata
+        video_device: Video device for recording
+    """
+    for seed in range(5):
+        print(f"Yaw figure-eight experiment: size={size}m, velocity={velocity}m/s, repetitions={repetitions}, run={seed}")
+        if not continue_skip_abort():
+            continue
+        
+        path = next_log_number(f"data/yaw_figure_eight")
+        dt = 0.05
+        
+        # Generate figure-eight trajectory (returns x, y, yaw, vel, time)
+        x, y, yaw_setpoints, velocity_setpoints, time_arr = generate_figure_eight_trajectory(size=size, velocity=velocity, dt=dt)
+        
+        # Repeat the trajectory N times
+        if repetitions > 1:
+            x = np.tile(x, repetitions)
+            y = np.tile(y, repetitions)
+            yaw_setpoints = np.tile(yaw_setpoints, repetitions)
+            velocity_setpoints = np.tile(velocity_setpoints, repetitions)
+            time_arr = np.arange(len(x)) * dt
+        
+        # Display trajectory and setpoints
+        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+        
+        # XY trajectory plot
+        axes[0, 0].plot(x, y, 'b-', linewidth=2)
+        axes[0, 0].plot(x[0], y[0], 'go', markersize=10, label='Start')
+        axes[0, 0].plot(x[-1], y[-1], 'ro', markersize=10, label='End')
+        axes[0, 0].set_xlabel('X [m]')
+        axes[0, 0].set_ylabel('Y [m]')
+        axes[0, 0].set_title(f'Figure-Eight Trajectory (size={size}m)')
+        axes[0, 0].axis('equal')
+        axes[0, 0].grid(True)
+        axes[0, 0].legend()
+        
+        # Yaw setpoints
+        axes[0, 1].plot(time_arr, yaw_setpoints)
+        axes[0, 1].set_xlabel('Time [s]')
+        axes[0, 1].set_ylabel('Yaw [deg]')
+        axes[0, 1].set_title('Yaw Setpoints')
+        axes[0, 1].grid(True)
+        
+        # Velocity setpoints
+        axes[1, 0].plot(time_arr, velocity_setpoints)
+        axes[1, 0].set_xlabel('Time [s]')
+        axes[1, 0].set_ylabel('Velocity [m/s]')
+        axes[1, 0].set_title('Velocity Setpoints')
+        axes[1, 0].grid(True)
+        
+        # Convert absolute yaw to delta angles for transmission
+        yaw_deltas = convert_absolute_yaw_to_deltas(yaw_setpoints, dt)
+        
+        axes[1, 1].plot(time_arr, yaw_deltas)
+        axes[1, 1].set_xlabel('Time [s]')
+        axes[1, 1].set_ylabel('Yaw Delta [deg]')
+        axes[1, 1].set_title('Yaw Delta Commands (sent to robot)')
+        axes[1, 1].grid(True)
+        
+        plt.tight_layout()
+        plt.show()
+        
+        # Zero roll and pitch for yaw experiments
+        roll = np.zeros_like(yaw_deltas)
+        pitch = np.zeros_like(yaw_deltas)
+        
+        plot_and_run_with_repeat(
+            velocity_setpoints, roll, pitch, time_arr, dt,
+            wheelbot_name=wheelbot_name,
+            surface=surface,
+            video_device=video_device,
+            path=path,
+            yaw_delta=yaw_deltas
+        )
+
+
 def velrollpitch(wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
     for seed in range(35,40):
         if not continue_skip_abort():
@@ -484,6 +661,8 @@ if __name__ == "__main__":
         "roll_max": roll_max,
         "pitch": pitch,
         "yaw": yaw,
+        "yaw_figure_circle": yaw_figure_circle,
+        "yaw_figure_eight": yaw_figure_eight,
         "velrollpitch": velrollpitch,
         "velrollpitch2": velrollpitch2,
         "lin": lin,
