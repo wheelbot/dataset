@@ -8,7 +8,7 @@ geometric trajectories with corresponding yaw and velocity setpoints.
 import numpy as np
 
 
-def generate_circle_trajectory(radius=1.0, velocity=0.2, dt=0.05):
+def generate_circle_trajectory(diameter=1.0, velocity=0.2, dt=0.05):
     """
     Generate a circular trajectory with constant velocity.
     
@@ -25,6 +25,7 @@ def generate_circle_trajectory(radius=1.0, velocity=0.2, dt=0.05):
         time: Array of time values
     """
     # Circumference and duration
+    radius = diameter/2
     circumference = 2 * np.pi * radius
     duration_s = circumference / velocity
     

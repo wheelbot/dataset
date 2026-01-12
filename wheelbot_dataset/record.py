@@ -289,7 +289,7 @@ def yaw(yaw_range_deg=90, duration_s=30.0, wheelbot_name=default_wheelbot_name, 
         )
 
 
-def yaw_figure_circle(radius=1.0, velocity=0.2, repetitions=2, wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
+def yaw_figure_circle(diameter=0.5, velocity=0.1, repetitions=2, wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
     """
     Run yaw experiments following a circular trajectory.
     
@@ -304,15 +304,30 @@ def yaw_figure_circle(radius=1.0, velocity=0.2, repetitions=2, wheelbot_name=def
         video_device: Video device for recording
     """
     for seed in range(5):
-        print(f"Yaw circle experiment: radius={radius}m, velocity={velocity}m/s, repetitions={repetitions}, run={seed}")
+        print(f"Yaw circle experiment: radius={diameter}m, velocity={velocity}m/s, repetitions={repetitions}, run={seed}")
         if not continue_skip_abort():
             continue
         
         path = next_log_number(f"data/yaw_circle")
         dt = 0.05
         
+        # Randomly choose direction based on seed (1 = counterclockwise, -1 = clockwise)
+        np.random.seed(seed + global_seed_offset)
+        direction = np.random.choice([-1, 1])
+        forward_sign = np.random.choice([-1, 1])
+        direction_str = "counterclockwise" if direction == 1 else "clockwise"
+        forward_str = "forward" if forward_sign == 1 else "backward"
+        print(f"  Direction: {direction_str}, Motion: {forward_str}")
+        
         # Generate circular trajectory (returns x, y, yaw, vel, time)
-        x, y, yaw_setpoints, velocity_setpoints, time_arr = generate_circle_trajectory(radius=radius, velocity=velocity, dt=dt)
+        x, y, yaw_setpoints, velocity_setpoints, time_arr = generate_circle_trajectory(diameter=diameter, velocity=velocity, dt=dt)
+        
+        # Flip direction by negating y and yaw
+        y = y * direction
+        yaw_setpoints = yaw_setpoints * direction
+        
+        # Flip forward/backward by negating velocity
+        velocity_setpoints = velocity_setpoints * forward_sign
         
         # Repeat the trajectory N times
         if repetitions > 1:
@@ -331,7 +346,7 @@ def yaw_figure_circle(radius=1.0, velocity=0.2, repetitions=2, wheelbot_name=def
         axes[0, 0].plot(x[-1], y[-1], 'ro', markersize=10, label='End')
         axes[0, 0].set_xlabel('X [m]')
         axes[0, 0].set_ylabel('Y [m]')
-        axes[0, 0].set_title(f'Circle Trajectory (radius={radius}m)')
+        axes[0, 0].set_title(f'Circle Trajectory (diameter={diameter}m)')
         axes[0, 0].axis('equal')
         axes[0, 0].grid(True)
         axes[0, 0].legend()
@@ -376,7 +391,7 @@ def yaw_figure_circle(radius=1.0, velocity=0.2, repetitions=2, wheelbot_name=def
         )
 
 
-def yaw_figure_eight(size=1.0, velocity=0.2, repetitions=2, wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
+def yaw_figure_eight(size=0.5, velocity=0.1, repetitions=2, wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
     """
     Run yaw experiments following a figure-eight trajectory.
     
@@ -398,8 +413,23 @@ def yaw_figure_eight(size=1.0, velocity=0.2, repetitions=2, wheelbot_name=defaul
         path = next_log_number(f"data/yaw_figure_eight")
         dt = 0.05
         
+        # Randomly choose direction based on seed (1 = normal, -1 = mirrored)
+        np.random.seed(seed + global_seed_offset)
+        direction = np.random.choice([-1, 1])
+        forward_sign = np.random.choice([-1, 1])
+        direction_str = "left-first" if direction == 1 else "right-first"
+        forward_str = "forward" if forward_sign == 1 else "backward"
+        print(f"  Direction: {direction_str}, Motion: {forward_str}")
+        
         # Generate figure-eight trajectory (returns x, y, yaw, vel, time)
         x, y, yaw_setpoints, velocity_setpoints, time_arr = generate_figure_eight_trajectory(size=size, velocity=velocity, dt=dt)
+        
+        # Flip direction by negating y and yaw
+        y = y * direction
+        yaw_setpoints = yaw_setpoints * direction
+        
+        # Flip forward/backward by negating velocity
+        velocity_setpoints = velocity_setpoints * forward_sign
         
         # Repeat the trajectory N times
         if repetitions > 1:
