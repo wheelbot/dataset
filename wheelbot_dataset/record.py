@@ -38,7 +38,7 @@ from wheelbot_dataset.recording.utils import (
 
 import fire
 
-default_wheelbot_name="wheelbot-beta-2"
+default_wheelbot_name="wheelbot-beta-1"
 # default_surface="gray_felt"
 default_surface="black_pvc"
 default_video_device="/dev/video4"
@@ -197,7 +197,7 @@ def roll_max(angle=10, wheelbot_name=default_wheelbot_name, surface=default_surf
         plot_and_run_with_repeat(velocity, roll, pitch, time, dt, wheelbot_name=wheelbot_name, surface=surface, video_device=video_device, path=path)
 
 def pitch(wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
-    pitch_ranges = np.linspace(15,20,3)
+    pitch_ranges = np.linspace(10,20,5)
     for seed, pr in enumerate(pitch_ranges):
         print(f"Pitch: {pr}")
         if not continue_skip_abort():
