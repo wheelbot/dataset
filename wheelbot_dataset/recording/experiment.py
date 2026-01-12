@@ -22,14 +22,49 @@ import uuid as uuid_module
 class VideoRecorder:
     def __init__(self, camera_device="/dev/video0", output_path="log/video.mp4"):
         self.os_name = platform.system().lower()  # "darwin" (macOS) or "linux"
-        self.camera_device = camera_device
         self.output_path = output_path
         self.process = None
         self.running = False
 
-        if self.os_name == "darwin":  # macOS
-            self.camera_device = "0"  # AVFoundation device index
-    
+        if self.os_name == "darwin":
+            # Attempt to find the specific Intel RealSense RGB index
+            detected_device = self._find_macos_realsense_rgb()
+            if detected_device:
+                self.camera_device = detected_device
+            else:
+                # Fallback to the original logic if detection fails
+                self.camera_device = "0"
+            print(f"[*] macOS detected. Selected camera device index: {self.camera_device}")
+        else:
+            self.camera_device = camera_device
+
+    def _find_macos_realsense_rgb(self):
+        """
+        Parses ffmpeg output to find the index of the RealSense RGB camera.
+        """
+        try:
+            # ffmpeg outputs device list to stderr
+            cmd = ["ffmpeg", "-f", "avfoundation", "-list_devices", "true", "-i", ""]
+            result = subprocess.run(cmd, stderr=subprocess.PIPE, text=True, timeout=5)
+            
+            # Use regex to find the line containing 'RealSense' and 'RGB'
+            # Looking for pattern: [x] ... RealSense ... RGB
+            lines = result.stderr.splitlines()
+            for line in lines:
+                if "RealSense" in line and "RGB" in line:
+                    match = re.search(r"\[(\d+)\]", line)
+                    if match:
+                        idx = match.group(1)
+                        print(f"[+] Found RealSense RGB at index: {idx}")
+                        return idx
+            
+            print("[!] Could not find RealSense RGB in device list.")
+            return None
+            
+        except Exception as e:
+            print(f"[!] Error during camera discovery: {e}")
+            return None
+        
     def start(self):
         """Start video recording in the background using ffmpeg."""
         if self.running:
@@ -630,7 +665,7 @@ if __name__=="__main__":
     # print(controller.get_output())
     
     
-    rec = VideoRecorder("0", "test/video.mp4")
+    rec = VideoRecorder("1", "test/video.mp4")
     rec.start()
     time.sleep(5)
     rec.stop()
