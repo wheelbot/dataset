@@ -531,7 +531,7 @@ def velrollpitch2(wheelbot_name=default_wheelbot_name, surface=default_surface, 
         plot_and_run_with_repeat(velocity, roll, pitch, time, dt, wheelbot_name=wheelbot_name, surface=surface, video_device=video_device, path=path)        
 
 def lin(wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
-    target_velocities = np.linspace(0.5,1.5,3)
+    target_velocities = np.linspace(0.2,1.0,5)
     for seed, vel in enumerate(target_velocities):
         if not continue_skip_abort():
             continue
