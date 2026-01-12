@@ -560,7 +560,7 @@ def linwithlean(wheelbot_name=default_wheelbot_name, surface=default_surface, vi
         plot_and_run_with_repeat(velocity, roll, pitch, time, dt, wheelbot_name=wheelbot_name, surface=surface, video_device=video_device, path=path)
 
 def lin2(wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
-    target_velocities = np.linspace(0.5,1,3)
+    target_velocities = np.linspace(0.2,1,5)
     dirs = [-1, +1]
     for seed, vel in enumerate(target_velocities):
         for dir in dirs:
