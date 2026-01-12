@@ -225,6 +225,8 @@ if __name__ == "__main__":
         data = pickle.load(f)
     
     MAX_ROLLOUT_LENGTH = 100
+    MODEL_WIDTH_SIZE = 64
+    MODEL_DEPTH = 2
     
     states = jnp.squeeze(jnp.array(data["states"]))
     actions = jnp.array(data["actions"])[:, :MAX_ROLLOUT_LENGTH, :]
@@ -282,8 +284,8 @@ if __name__ == "__main__":
         num_epochs=100,
         batch_size=1024,
         learning_rate=1e-3,
-        mlp_width_size=64,
-        mlp_depth=2
+        mlp_width_size=MODEL_WIDTH_SIZE,
+        mlp_depth=MODEL_DEPTH
     )
     
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
@@ -312,8 +314,8 @@ if __name__ == "__main__":
     hyperparams = {
         "input_dim": state_dim + action_dim,
         "output_dim": state_dim,
-        "width_size": 64,
-        "depth": 2,
+        "width_size": MODEL_WIDTH_SIZE,
+        "depth": MODEL_DEPTH,
         "state_mean": state_mean.tolist(),
         "state_std": state_std.tolist(),
         "action_mean": action_mean.tolist(),
