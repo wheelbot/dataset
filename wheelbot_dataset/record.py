@@ -549,7 +549,7 @@ def lin(wheelbot_name=default_wheelbot_name, surface=default_surface, video_devi
         plot_and_run_with_repeat(velocity, roll, pitch, time, dt, wheelbot_name=wheelbot_name, surface=surface, video_device=video_device, path=path)
 
 def linwithlean(wheelbot_name=default_wheelbot_name, surface=default_surface, video_device=default_video_device):
-    target_velocities = np.linspace(0.5, 1.5, 3)
+    target_velocities = np.linspace(0.2, 1, 5)
     for seed, vel in enumerate(target_velocities):
         if not continue_skip_abort():
             continue
@@ -575,7 +575,7 @@ def lin2(wheelbot_name=default_wheelbot_name, surface=default_surface, video_dev
             if not continue_skip_abort():
                 continue
             path = next_log_number(f"data/velocity_roll")
-            velocity, time, dt = linear_velocity_sequence(target_velocity=1.0, const_time=1, accel_time=1.0)
+            velocity, time, dt = linear_velocity_sequence(target_velocity=vel, const_time=1, accel_time=1.0)
             roll = np.zeros_like(velocity)       
             accel_samples = int(1.0 / dt)
             const_samples = int(1. / dt)
