@@ -509,7 +509,6 @@ def plot_and_run_sequence(velocity, roll, pitch, time, dt, wheelbot_name, surfac
 
     roll = np.deg2rad(roll).tolist()
     pitch = np.deg2rad(pitch).tolist()
-    yaw_delta = np.deg2rad(yaw_delta).tolist()
     
     # Save setpoints to pickle file
     data = {
@@ -520,6 +519,7 @@ def plot_and_run_sequence(velocity, roll, pitch, time, dt, wheelbot_name, surfac
         'dt': dt
     }
     if is_yaw_experiment:
+        yaw_delta = np.deg2rad(yaw_delta).tolist()
         data['yaw_delta'] = yaw_delta.tolist() if hasattr(yaw_delta, 'tolist') else list(yaw_delta)
 
     # Find next available number in excitation_sequences folder
