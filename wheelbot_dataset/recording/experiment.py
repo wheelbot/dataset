@@ -1,4 +1,5 @@
 import subprocess
+import platform
 
 import paramiko
 import re
@@ -20,10 +21,14 @@ import uuid as uuid_module
 
 class VideoRecorder:
     def __init__(self, camera_device="/dev/video0", output_path="log/video.mp4"):
+        self.os_name = platform.system().lower()  # "darwin" (macOS) or "linux"
         self.camera_device = camera_device
         self.output_path = output_path
         self.process = None
         self.running = False
+
+        if self.os_name == "darwin":  # macOS
+            self.camera_device = "0"  # AVFoundation device index
     
     def start(self):
         """Start video recording in the background using ffmpeg."""
@@ -36,20 +41,42 @@ class VideoRecorder:
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir, exist_ok=True)
         
-        # Start ffmpeg process to record video
-        cmd = [
-            "ffmpeg",
-            "-f", "v4l2",
-            "-fflags", "+genpts",
-            "-framerate", "30",
-            "-video_size", "640x480",
-            "-i", self.camera_device,
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-y",  # Overwrite output file if it exists
-            "-reset_timestamps", "1",
-            self.output_path
-        ]
+        if self.os_name == "darwin":  # macOS AVFoundation
+            # Most RealSense RGB cams require explicit pixel format
+            cmd = [
+                "ffmpeg",
+                "-f",
+                "avfoundation",
+                "-framerate",
+                "30",
+                "-pixel_format",
+                "uyvy422",
+                "-video_size",
+                "640x480",
+                "-i",
+                self.camera_device,
+                "-c:v",
+                "libx264",
+                "-preset",
+                "ultrafast",
+                "-y",
+                self.output_path,
+            ]
+        else:
+            # Start ffmpeg process to record video
+            cmd = [
+                "ffmpeg",
+                "-f", "v4l2",
+                "-fflags", "+genpts",
+                "-framerate", "30",
+                "-video_size", "640x480",
+                "-i", self.camera_device,
+                "-c:v", "libx264",
+                "-preset", "ultrafast",
+                "-y",  # Overwrite output file if it exists
+                "-reset_timestamps", "1",
+                self.output_path
+            ]
         
         try:
             print(f"[*] Starting video recording: {self.camera_device} -> {self.output_path}")
@@ -603,7 +630,7 @@ if __name__=="__main__":
     # print(controller.get_output())
     
     
-    rec = VideoRecorder("/dev/video8", "test/video.mp4")
+    rec = VideoRecorder("0", "test/video.mp4")
     rec.start()
     time.sleep(5)
     rec.stop()
