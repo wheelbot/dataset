@@ -122,7 +122,10 @@ def plot_comparison(csv_path: str, backup_path: str, output_dir: str) -> bool:
     
     # Create plots
     fig, axes = plt.subplots(3, 1, figsize=(14, 10))
-    fig.suptitle(f"Yaw Fix Comparison: yaw_circle/{exp_name}", fontsize=14)
+    
+    # Extract folder name from the csv_path for the title
+    folder_name = os.path.basename(os.path.dirname(csv_path))
+    fig.suptitle(f"Yaw Fix Comparison: {folder_name}/{exp_name}", fontsize=14)
     
     # Roll
     axes[0].plot(time_cut, roll_updated_cut, label='Updated (Filter)', linewidth=1.5, color='blue')
@@ -169,67 +172,90 @@ def plot_comparison(csv_path: str, backup_path: str, output_dir: str) -> bool:
 
 
 def main():
-    """Create comparison plots for all yaw_circle experiments."""
+    """Create comparison plots for all yaw_circle, yaw_figure_eight, and yaw experiments."""
     
     # Get the data directory path
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    data_dir = os.path.join(script_dir, '..', '..', 'data', 'yaw_circle')
-    data_dir = os.path.normpath(data_dir)
+    data_base_dir = os.path.join(script_dir, '..', '..', 'data')
+    data_base_dir = os.path.normpath(data_base_dir)
+    
+    # Define the folders to process
+    folders_to_process = ['yaw_circle', 'yaw_figure_eight', 'yaw']
     
     # Create output directory
     output_dir = os.path.join(script_dir, 'plots', 'fix_yaw')
     os.makedirs(output_dir, exist_ok=True)
     
-    print(f"Processing experiments in: {data_dir}")
     print(f"Output directory: {output_dir}\n")
     
-    if not os.path.exists(data_dir):
-        print(f"Error: Data directory not found: {data_dir}")
-        return
+    # Process each folder
+    total_success = 0
+    total_failed = 0
     
-    # Find all CSV files in the yaw_circle directory (excluding backups)
-    csv_files = sorted(glob.glob(os.path.join(data_dir, '*.csv')))
-    csv_files = [f for f in csv_files if not f.endswith('.backup')]
-    
-    if not csv_files:
-        print("No CSV files found in the yaw_circle directory")
-        return
-    
-    print(f"Found {len(csv_files)} CSV files to process\n")
-    
-    # Process each CSV file
-    success_count = 0
-    failed_count = 0
-    
-    for csv_path in csv_files:
-        filename = os.path.basename(csv_path)
-        backup_path = csv_path + '.backup'
+    for folder_name in folders_to_process:
+        data_dir = os.path.join(data_base_dir, folder_name)
         
-        print(f"Processing: {filename}")
+        print(f"\n{'=' * 50}")
+        print(f"Processing folder: {folder_name}")
+        print(f"Path: {data_dir}")
+        print('=' * 50)
         
-        if not os.path.exists(backup_path):
-            print(f"  ✗ No backup file found: {backup_path}\n")
-            failed_count += 1
+        if not os.path.exists(data_dir):
+            print(f"  Warning: Data directory not found: {data_dir}")
+            print(f"  Skipping {folder_name}\n")
             continue
         
-        try:
-            if plot_comparison(csv_path, backup_path, output_dir):
-                success_count += 1
-                print(f"  ✓ Successfully created plot for {filename}\n")
-            else:
+        # Find all CSV files in the directory (excluding backups)
+        csv_files = sorted(glob.glob(os.path.join(data_dir, '*.csv')))
+        csv_files = [f for f in csv_files if not f.endswith('.backup')]
+        
+        if not csv_files:
+            print(f"  No CSV files found in {folder_name}")
+            continue
+        
+        print(f"  Found {len(csv_files)} CSV files to process\n")
+        
+        # Process each CSV file
+        success_count = 0
+        failed_count = 0
+        
+        for csv_path in csv_files:
+            filename = os.path.basename(csv_path)
+            backup_path = csv_path + '.backup'
+            
+            print(f"  Processing: {filename}")
+            
+            if not os.path.exists(backup_path):
+                print(f"    ✗ No backup file found: {backup_path}\n")
                 failed_count += 1
-                print(f"  ✗ Failed to create plot for {filename}\n")
-        except Exception as e:
-            failed_count += 1
-            print(f"  ✗ Error processing {filename}: {e}\n")
-            import traceback
-            traceback.print_exc()
+                continue
+            
+            try:
+                if plot_comparison(csv_path, backup_path, output_dir):
+                    success_count += 1
+                    print(f"    ✓ Successfully created plot for {filename}\n")
+                else:
+                    failed_count += 1
+                    print(f"    ✗ Failed to create plot for {filename}\n")
+            except Exception as e:
+                failed_count += 1
+                print(f"    ✗ Error processing {filename}: {e}\n")
+                import traceback
+                traceback.print_exc()
+        
+        # Folder summary
+        print(f"\n  {folder_name} Summary:")
+        print(f"    Successful: {success_count}")
+        print(f"    Failed: {failed_count}")
+        
+        total_success += success_count
+        total_failed += failed_count
     
-    # Summary
-    print("=" * 50)
-    print(f"Plotting complete!")
-    print(f"  Successful: {success_count}")
-    print(f"  Failed: {failed_count}")
+    # Overall summary
+    print("\n" + "=" * 50)
+    print(f"Overall Plotting Complete!")
+    print(f"  Total Successful: {total_success}")
+    print(f"  Total Failed: {total_failed}")
     print(f"  Output: {output_dir}")
     print("=" * 50)
 

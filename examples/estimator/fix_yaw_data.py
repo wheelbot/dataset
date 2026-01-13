@@ -150,55 +150,77 @@ def fix_experiment_yaw(csv_path: str, meta_path: str = None) -> bool:
 
 
 def main():
-    """Process all experiments in data/yaw_circle directory."""
+    """Process all experiments in data/yaw_circle, yaw_figure_eight, and yaw directories."""
     
     # Get the data directory path
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    data_dir = os.path.join(script_dir, '..', '..', 'data', 'yaw_circle')
-    data_dir = os.path.normpath(data_dir)
+    data_base_dir = os.path.join(script_dir, '..', '..', 'data')
+    data_base_dir = os.path.normpath(data_base_dir)
     
-    print(f"Processing experiments in: {data_dir}")
+    # Define the folders to process
+    folders_to_process = ['yaw_circle', 'yaw_figure_eight', 'yaw']
     
-    if not os.path.exists(data_dir):
-        print(f"Error: Data directory not found: {data_dir}")
-        return
+    # Process each folder
+    total_success = 0
+    total_failed = 0
     
-    # Find all CSV files in the yaw_circle directory
-    csv_files = sorted(glob.glob(os.path.join(data_dir, '*.csv')))
-    
-    # Filter out backup files
-    csv_files = [f for f in csv_files if not f.endswith('.backup')]
-    
-    if not csv_files:
-        print("No CSV files found in the yaw_circle directory")
-        return
-    
-    print(f"Found {len(csv_files)} CSV files to process\n")
-    
-    # Process each CSV file
-    success_count = 0
-    failed_count = 0
-    
-    for csv_path in csv_files:
-        filename = os.path.basename(csv_path)
-        print(f"Processing: {filename}")
+    for folder_name in folders_to_process:
+        data_dir = os.path.join(data_base_dir, folder_name)
         
-        try:
-            if fix_experiment_yaw(csv_path):
-                success_count += 1
-                print(f"  ✓ Successfully updated {filename}\n")
-            else:
+        print(f"\n{'=' * 50}")
+        print(f"Processing folder: {folder_name}")
+        print(f"Path: {data_dir}")
+        print('=' * 50)
+        
+        if not os.path.exists(data_dir):
+            print(f"  Warning: Data directory not found: {data_dir}")
+            print(f"  Skipping {folder_name}\n")
+            continue
+        
+        # Find all CSV files in the directory
+        csv_files = sorted(glob.glob(os.path.join(data_dir, '*.csv')))
+        
+        # Filter out backup files
+        csv_files = [f for f in csv_files if not f.endswith('.backup')]
+        
+        if not csv_files:
+            print(f"  No CSV files found in {folder_name}")
+            continue
+        
+        print(f"  Found {len(csv_files)} CSV files to process\n")
+        
+        # Process each CSV file
+        success_count = 0
+        failed_count = 0
+        
+        for csv_path in csv_files:
+            filename = os.path.basename(csv_path)
+            print(f"  Processing: {filename}")
+            
+            try:
+                if fix_experiment_yaw(csv_path):
+                    success_count += 1
+                    print(f"    ✓ Successfully updated {filename}\n")
+                else:
+                    failed_count += 1
+                    print(f"    ✗ Failed to process {filename}\n")
+            except Exception as e:
                 failed_count += 1
-                print(f"  ✗ Failed to process {filename}\n")
-        except Exception as e:
-            failed_count += 1
-            print(f"  ✗ Error processing {filename}: {e}\n")
+                print(f"    ✗ Error processing {filename}: {e}\n")
+        
+        # Folder summary
+        print(f"\n  {folder_name} Summary:")
+        print(f"    Successful: {success_count}")
+        print(f"    Failed: {failed_count}")
+        
+        total_success += success_count
+        total_failed += failed_count
     
-    # Summary
-    print("=" * 50)
-    print(f"Processing complete!")
-    print(f"  Successful: {success_count}")
-    print(f"  Failed: {failed_count}")
+    # Overall summary
+    print("\n" + "=" * 50)
+    print(f"Overall Processing Complete!")
+    print(f"  Total Successful: {total_success}")
+    print(f"  Total Failed: {total_failed}")
     print("=" * 50)
 
 
