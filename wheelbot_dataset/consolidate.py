@@ -10,6 +10,7 @@ import os
 import shutil
 import json
 import pandas as pd
+import numpy as np
 from typing import Union
 import fire
 from wheelbot_dataset.usage.dataset import Dataset
@@ -245,8 +246,147 @@ def statistics(dataset_path: str, cutoff_seconds: float = 7.0):
     print()
 
 
+def updaterates(dataset_path: str, group_name: str, index: int):
+    """
+    Analyze true update rates of data columns in a specific experiment.
+    
+    Calculates the effective update rate for each column by detecting how many
+    consecutive rows have the same value, then computing the actual rate at which
+    values change.
+    
+    The update rate is calculated by:
+    1. Detecting runs of consecutive identical values for each column
+    2. Computing the average run length (how many rows have the same value)
+    3. Calculating the update rate as: sampling_rate / avg_run_length
+    
+    Args:
+        dataset_path: Path to the root directory of the dataset.
+        group_name: Name of the experiment group (e.g., "pitch", "roll", "yaw").
+        index: Index of the experiment within the group to analyze.
+    
+    Returns:
+        None: Prints update rate analysis to stdout.
+        
+    Example:
+        >>> updaterates("data", "pitch", 4)
+        Analyzing experiment: data/pitch/4.csv
+        ...
+    """
+    # Load the dataset
+    try:
+        ds = Dataset(dataset_path)
+    except Exception as e:
+        print(f"Error loading dataset: {e}")
+        return
+    
+    # Load the specified group
+    try:
+        group = ds.load_group(group_name)
+    except KeyError:
+        print(f"Error: Group '{group_name}' not found in dataset.")
+        print(f"Available groups: {', '.join(sorted(ds.groups.keys()))}")
+        return
+    
+    # Get the specified experiment
+    if index < 0 or index >= len(group.experiments):
+        print(f"Error: Index {index} out of range. Group '{group_name}' has {len(group.experiments)} experiments (0-{len(group.experiments)-1}).")
+        return
+    
+    experiment = group[index]
+    df = experiment.data
+    
+    # Calculate the nominal sampling rate from the time index
+    time_diffs = np.diff(df.index)
+    avg_dt = np.mean(time_diffs)
+    nominal_rate = 1.0 / avg_dt if avg_dt > 0 else 0
+    
+    print(f"\n{'='*80}")
+    print(f"Analyzing experiment: {experiment.csv_path}")
+    print(f"{'='*80}")
+    print(f"Total samples: {len(df)}")
+    print(f"Time range: {df.index[0]:.3f} to {df.index[-1]:.3f} seconds")
+    print(f"Duration: {df.index[-1] - df.index[0]:.3f} seconds")
+    print(f"Average time step: {avg_dt*1000:.3f} ms")
+    print(f"Nominal sampling rate: {nominal_rate:.2f} Hz")
+    print(f"\n{'='*80}")
+    print(f"Column Update Rate Analysis")
+    print(f"{'='*80}")
+    print(f"{'Column':<50} {'Avg Run':<12} {'Update Rate':<15} {'vs Nominal'}")
+    print(f"{'-'*50} {'-'*12} {'-'*15} {'-'*12}")
+    
+    update_rates = {}
+    
+    for col in df.columns:
+        # Get the column data as numpy array
+        data = df[col].values
+        
+        # Find where values change
+        # Compare each value with the next one
+        changes = np.concatenate([[True], data[1:] != data[:-1]])
+        
+        # Find indices where changes occur
+        change_indices = np.where(changes)[0]
+        
+        # Calculate run lengths (number of consecutive identical values)
+        if len(change_indices) > 1:
+            run_lengths = np.diff(change_indices)
+            avg_run_length = np.mean(run_lengths)
+        elif len(change_indices) == 1:
+            # Only one change or all values are the same
+            avg_run_length = len(data)
+        else:
+            # No changes at all
+            avg_run_length = len(data)
+        
+        # Calculate the update rate
+        # Update rate = nominal_rate / avg_run_length
+        update_rate = nominal_rate / avg_run_length if avg_run_length > 0 else 0
+        
+        update_rates[col] = update_rate
+        
+        # Calculate ratio to nominal rate
+        ratio = update_rate / nominal_rate if nominal_rate > 0 else 0
+        
+        # Determine if this is likely a low-rate signal
+        if avg_run_length > 1.5:
+            marker = " *"
+        else:
+            marker = ""
+        
+        print(f"{col:<50} {avg_run_length:>10.2f}   {update_rate:>10.2f} Hz   {ratio:>8.2%}{marker}")
+    
+    # Analyze by update rate
+    threshold_ratio = 0.5
+    high_rate = {}
+    low_rate = {}
+    
+    for col, rate in update_rates.items():
+        ratio = rate / nominal_rate if nominal_rate > 0 else 0
+        if ratio >= threshold_ratio:
+            high_rate[col] = rate
+        else:
+            low_rate[col] = rate
+    
+    print(f"\n{'='*80}")
+    print("* Indicates signals with update rate significantly below nominal rate")
+    print(f"{'='*80}\n")
+    
+    print(f"Summary Statistics:")
+    print(f"{'-'*80}")
+    print(f"High-rate signals (>= {threshold_ratio*100:.0f}% of nominal): {len(high_rate)}")
+    print(f"Low-rate signals (< {threshold_ratio*100:.0f}% of nominal): {len(low_rate)}")
+    
+    if low_rate:
+        print(f"\nLow-rate signals:")
+        for col, rate in sorted(low_rate.items(), key=lambda x: x[1]):
+            print(f"  {col:<48} {rate:>8.2f} Hz")
+    
+    print()
+
+
 if __name__ == "__main__":
     fire.Fire({
         "consolidate": consolidate,
         "statistics": statistics,
+        "updaterates": updaterates,
     })
