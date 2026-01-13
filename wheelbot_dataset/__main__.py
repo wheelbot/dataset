@@ -12,8 +12,9 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python -m wheelbot_dataset <command>")
         print("Commands:")
-        print("  record    - Run the recording CLI (use 'record --help' for options)")
-        print("  example   - Run the example usage script")
+        print("  record       - Run the recording CLI (use 'record --help' for options)")
+        print("  consolidate  - Consolidate or analyze datasets (use 'consolidate --help' for options)")
+        print("  example      - Run the example usage script")
         sys.exit(1)
     
     command = sys.argv[1]
@@ -34,15 +35,22 @@ def main():
             "lin": record_module.lin,
             "linwithlean": record_module.linwithlean,
             "lin2": record_module.lin2,
-            "consolidate": record_module.consolidate,
-            "consolidate_archive_to_data": lambda: record_module.consolidate("archive", "data_consolidated"),
+        })
+    elif command == "consolidate":
+        # Remove the 'consolidate' command from argv so fire sees the subcommand
+        sys.argv = [sys.argv[0]] + sys.argv[2:]
+        from wheelbot_dataset.consolidate import fire
+        import wheelbot_dataset.consolidate as consolidate_module
+        fire.Fire({
+            "consolidate": consolidate_module.consolidate,
+            "statistics": consolidate_module.statistics,
         })
     elif command == "example":
         from wheelbot_dataset.example_usage import example_usage
         example_usage()
     else:
         print(f"Unknown command: {command}")
-        print("Available commands: record, example")
+        print("Available commands: record, consolidate, example")
         sys.exit(1)
 
 

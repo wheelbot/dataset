@@ -38,7 +38,7 @@ from wheelbot_dataset.recording.utils import (
 
 import fire
 
-default_wheelbot_name="wheelbot-beta-1"
+default_wheelbot_name="wheelbot-beta-3"
 # default_surface="gray_felt"
 default_surface="black_pvc"
 default_video_device="/dev/video4"
@@ -598,100 +598,6 @@ def lin2(wheelbot_name=default_wheelbot_name, surface=default_surface, video_dev
             plot_and_run_with_repeat(velocity, roll, pitch, time, dt, wheelbot_name=wheelbot_name, surface=surface, video_device=video_device, path=path)
 
 
-def consolidate(input_dataset_paths: list[str] | str, output_dataset_path: str):
-    """
-    Consolidate multiple dataset directories into a single unified dataset.
-    This function takes one or more input dataset paths and combines them into a single
-    output dataset, renumbering experiments sequentially within each group. It handles
-    datasets organized by groups (e.g., velocity, roll, pitch) and ensures all required
-    files for each experiment are present before copying.
-    Args:
-        input_dataset_paths: Either a single directory path containing multiple dataset
-            subdirectories, or a list of dataset directory paths to consolidate.
-        output_dataset_path: Path where the consolidated dataset will be created.
-    Raises:
-        None: Prints warnings and prompts user for confirmation if output path exists.
-    Returns:
-        None
-    Notes:
-        - Each experiment must have all required files (.csv, .log, .meta, .mp4, .pkl,
-          .preview.pdf, .setpoints.pdf) to be included in the consolidated dataset.
-        - Experiments are renumbered sequentially within each group, starting from 0.
-        - If output_dataset_path exists, the user is prompted to delete it before proceeding.
-    """
-    if isinstance(input_dataset_paths, str):
-        input_dataset_paths = [
-            os.path.join(input_dataset_paths, d) 
-            for d in os.listdir(input_dataset_paths)
-            if os.path.isdir(os.path.join(input_dataset_paths, d))
-        ]
-        
-        if os.path.exists(output_dataset_path):
-            print(f"Warning: Output dataset path already exists: {output_dataset_path}")
-            response = input(f"Do you want to delete '{output_dataset_path}' and recreate it? (y/N): ").strip().lower()
-            if response == 'y':
-                shutil.rmtree(output_dataset_path)
-                print(f"Deleted: {output_dataset_path}")
-            else:
-                print("Aborting.")
-                return
-    os.makedirs(output_dataset_path, exist_ok=True)
-    
-    next_number = {}
-    for input_path in input_dataset_paths:
-        if not os.path.isdir(input_path):
-            print(f"Skipping non-directory: {input_path}")
-            continue
-        
-        print(f"Processing: {input_path}")
-        
-        # Iterate through groups (velocity, roll, pitch, etc.)
-        for group_name in os.listdir(input_path):
-            group_path = os.path.join(input_path, group_name)
-            if not os.path.isdir(group_path):
-                continue
-            
-            # Initialize next number for this group if not seen before
-            if group_name not in next_number:
-                next_number[group_name] = 0
-            
-            # Create output group directory
-            output_group_path = os.path.join(output_dataset_path, group_name)
-            os.makedirs(output_group_path, exist_ok=True)
-            
-            # Find all experiment numbers in this group
-            experiment_numbers = set()
-            for filename in os.listdir(group_path):
-                if '.' in filename:
-                    number_str = filename.split('.')[0]
-                    if number_str.isdigit():
-                        experiment_numbers.add(int(number_str))
-            
-            # Process each experiment
-            for exp_num in sorted(experiment_numbers):
-                # Check if all required files exist
-                required_extensions = ['.csv', '.log', '.meta', '.mp4', '.pkl', '.preview.pdf', '.setpoints.pdf']
-                all_files_present = all(
-                    os.path.exists(os.path.join(group_path, f"{exp_num}{ext}"))
-                    for ext in required_extensions
-                )
-                
-                if not all_files_present:
-                    print(f"  Skipping incomplete experiment {group_name}/{exp_num}")
-                    continue
-                
-                # Copy all files with new numbering
-                new_num = next_number[group_name]
-                for ext in required_extensions:
-                    src = os.path.join(group_path, f"{exp_num}{ext}")
-                    dst = os.path.join(output_group_path, f"{new_num}{ext}")
-                    shutil.copy2(src, dst)
-                
-                print(f"  Copied {group_name}/{exp_num} -> {group_name}/{new_num}")
-                next_number[group_name] += 1
-
-    print(f"\nConsolidation complete. Output: {output_dataset_path}")        
-
 if __name__ == "__main__":
     fire.Fire({
         "vel": vel,
@@ -706,6 +612,4 @@ if __name__ == "__main__":
         "lin": lin,
         "linwithlean": linwithlean,
         "lin2": lin2,
-        "consolidate": consolidate,
-        "consolidate_archive_to_data": lambda: consolidate("archive", "data_consolidated"),
     })
