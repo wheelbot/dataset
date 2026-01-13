@@ -4,6 +4,7 @@ wheelbot-dataset: A package for recording and using wheelbot experiment data.
 This package provides tools for:
 - Recording experiments with the wheelbot robot (wheelbot_dataset.recording)
 - Loading and processing experiment datasets (wheelbot_dataset.usage)
+- Downloading datasets from Zenodo (wheelbot_dataset.download)
 """
 
 from wheelbot_dataset.usage import (
@@ -28,6 +29,11 @@ from wheelbot_dataset.recording import (
     plot_csv_preview,
 )
 
+from wheelbot_dataset.download import (
+    download_dataset,
+    check_dataset,
+)
+
 __all__ = [
     # Usage
     "Dataset",
@@ -47,4 +53,7 @@ __all__ = [
     "next_log_number",
     "continue_skip_abort",
     "plot_csv_preview",
+    # Download
+    "download_dataset",
+    "check_dataset",
 ]

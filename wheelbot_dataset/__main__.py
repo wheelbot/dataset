@@ -14,6 +14,7 @@ def main():
         print("Commands:")
         print("  record       - Run the recording CLI (use 'record --help' for options)")
         print("  consolidate  - Consolidate or analyze datasets (use 'consolidate --help' for options)")
+        print("  download     - Download dataset from Zenodo (use 'download --help' for options)")
         print("  example      - Run the example usage script")
         sys.exit(1)
     
@@ -44,13 +45,20 @@ def main():
         fire.Fire({
             "consolidate": consolidate_module.consolidate,
             "statistics": consolidate_module.statistics,
+            "updaterates": consolidate_module.updaterates,
         })
-    elif command == "example":
-        from wheelbot_dataset.example_usage import example_usage
-        example_usage()
+    elif command == "download":
+        # Remove the 'download' command from argv so fire sees the subcommand
+        sys.argv = [sys.argv[0]] + sys.argv[2:]
+        from wheelbot_dataset.download import fire
+        import wheelbot_dataset.download as download_module
+        fire.Fire({
+            "download": download_module.download_dataset,
+            "check": download_module.check_dataset,
+        })
     else:
         print(f"Unknown command: {command}")
-        print("Available commands: record, consolidate, example")
+        print("Available commands: record, consolidate, download, example")
         sys.exit(1)
 
 

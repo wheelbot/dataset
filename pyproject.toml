@@ -30,6 +30,7 @@ dependencies = [
     "matplotlib",
     "paramiko",
     "fire",
+    "requests",
 ]
 
 [project.optional-dependencies]
@@ -47,7 +48,6 @@ all = [
 
 [project.scripts]
 wheelbot-record = "wheelbot_dataset.__main__:main"
-wheelbot-example = "wheelbot_dataset.example_usage:example_usage"
 
 [project.urls]
 Homepage = "https://github.com/wheelbot/dataset"
