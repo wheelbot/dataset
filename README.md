@@ -1,8 +1,32 @@
 # Wheelbot Dataset
 
-A comprehensive dataset and Python package for working with Mini Wheelbot robot experiments. This package provides tools for downloading, processing, analyzing, and visualizing wheelbot experiment data collected from real-world robot experiments.
+A large, high-quality dynamics dataset of the [Mini Wheelbot](https://github.com/wheelbot/Mini-Wheelbot).
+The dataset contains 1 kHz data of all onboard sensor readings, the estimated state, ground-truth pose measurements from a motion capture system, and a third-person view video of the experiment.
+We perform a variety of experiments using pseudo-random binary excitation signals (PRBS) as setpoints of a linear controller, an MPC for driving, and an RL policy that races along a track.
+Experiments are performed across multiple hardware instances and on different surfaces.
+With this dataset, we hope to encourage researchers to use the Mini Wheelbot to benchmark their learning-based control methods, even without access to the real hardware.
+We include two example implementations of how to use the dataset, i.e., for dynamics learning and state estimation.
+A detailled description of this dataset is available in [the brief on arxiv](https://arxiv.org/abs/...).
 
-## 🎯 Overview
+If you find this dataset helpful, please cite the Mini Wheelbot paper or dataset directly:
+```
+@inproceedings{hose2025mini,
+   title={The {Mini Wheelbot}: A Testbed for Learning-based Balancing, Flips, and Articulated Driving},
+   booktitle={2025 IEEE International Conference on Robotics and Automation (ICRA)},
+   publisher={IEEE},
+   author={Hose, Henrik and Weisgerber, Jan and Trimpe, Sebastian},
+   year={2025},
+}
+
+@article{hose2026dataset,
+  title={The {Mini Wheelbot} Dataset: High-Fidelity Data for Robot Learning
+  author={Hose, Henrik and Weisgerber, Jan and Trimpe, Sebastian},
+  journal={arXiv preprint arXiv:2502.04582},
+  year={2025}
+}
+```
+
+## 🤖 Overview
 
 The Wheelbot Dataset contains trajectory data from a self-balancing wheeled robot across various experimental conditions including:
 - **Pitch experiments**: Random pitch angle tracking
@@ -346,20 +370,3 @@ If you use this dataset in your research, please cite:
   howpublished={\url{https://zenodo.org/record/XXXXXX}}
 }
 ```
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📧 Contact
-
-For questions or issues, please open an issue on GitHub or contact the maintainers.
-
-## 🙏 Acknowledgments
-
-- Data collected using Vicon motion capture systems
-- Robot control implemented using custom firmware and ROS2

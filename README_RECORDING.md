@@ -492,19 +492,3 @@ for exp in experiments:
 
 print("\nAll experiments completed!")
 ```
-
-## 🚦 Safety Notes
-
-- Always supervise the robot during experiments
-- Ensure adequate space for robot movement
-- Keep emergency stop accessible
-- Monitor battery temperature
-- Stop if robot shows unusual behavior
-
-## 📞 Support
-
-For issues or questions about recording:
-- Check existing experiment examples in `data/`
-- Review `wheelbot_dataset/record.py` for implementation details
-- Consult `wheelbot_dataset/recording/experiment.py` for low-level recording functions
-- Open an issue on GitHub for bugs or feature requests
