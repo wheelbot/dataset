@@ -6,9 +6,9 @@ We perform a variety of experiments using pseudo-random binary excitation signal
 Experiments are performed across multiple hardware instances and on different surfaces.
 With this dataset, we hope to encourage researchers to use the Mini Wheelbot to benchmark their learning-based control methods, even without access to the real hardware.
 We include two example implementations of how to use the dataset, i.e., for dynamics learning and state estimation.
-A detailled description of this dataset is available in [the brief on arxiv](https://arxiv.org/abs/...).
+A detailed description of this dataset is available in [the brief on arxiv](https://arxiv.org/abs/...).
 
-If you find this dataset helpful, please cite the Mini Wheelbot paper or dataset directly:
+If you find this dataset helpful, please cite the Mini Wheelbot paper and/or dataset directly:
 ```bibtex
 @inproceedings{hose2025mini,
    title={The {Mini Wheelbot}: A Testbed for Learning-based Balancing, Flips, and Articulated Driving},
