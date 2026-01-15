@@ -237,6 +237,4 @@ def main():
 
 
 if __name__ == "__main__":
-
-    for folder_name in ["data_felt", "data"]:
-        main(folder_name)
+    main()
