@@ -39,8 +39,7 @@ from wheelbot_dataset.recording.utils import (
 import fire
 
 default_wheelbot_name="wheelbot-beta-2"
-# default_surface="gray_felt"
-default_surface="concrete"
+default_surface="gray_felt"
 default_video_device="/dev/video4"
 # default_video_device=None
 global_seed_offset = 0
