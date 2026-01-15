@@ -28,12 +28,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
     
-    - name: Lint with ruff (if available)
-      run: |
-        pip install ruff || true
-        ruff check . || true
-      continue-on-error: true
-    
     - name: Test import
       run: |
         python -c "from wheelbot_dataset import Dataset, to_prediction_dataset, download_dataset"
@@ -55,32 +49,3 @@ jobs:
         pip install build
         python -m build
         ls -lh dist/
-
-  lint:
-    name: Lint and format check
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-    
-    - name: Install linting tools
-      run: |
-        python -m pip install --upgrade pip
-        pip install ruff black isort
-    
-    - name: Check with ruff
-      run: ruff check . --exit-zero
-      continue-on-error: true
-    
-    - name: Check with black
-      run: black --check . --diff
-      continue-on-error: true
-    
-    - name: Check with isort
-      run: isort --check-only --diff .
-      continue-on-error: true
