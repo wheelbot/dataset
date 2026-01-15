@@ -185,3 +185,4 @@ pyrightconfig.json
 
 tmp_*.py
 *.zip
+data_*
