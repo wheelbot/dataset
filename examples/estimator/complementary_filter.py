@@ -1,7 +1,8 @@
 """
-Python implementation of the C++ Estimator filter for orientation estimation.
+Complementary Filter for Orientation Estimation
 
-This script recreates the complementary filter that estimates YPR (Yaw-Pitch-Roll)
+Python implementation of the C++ Estimator filter for orientation estimation.
+This module recreates the complementary filter that estimates YPR (Yaw-Pitch-Roll)
 and their velocities from IMU measurements (gyroscopes and accelerometers) and
 motor encoder data.
 """
@@ -178,8 +179,6 @@ class Estimator:
     def estimate_accel(self, g_B):
         """Estimate roll and pitch from gravity vector."""
         q_A = np.zeros(2, dtype=np.float32)
-        # q_A[0] = np.arctan(g_B[1]/np.sqrt(g_B[0]**2 + g_B[2]**2))
-        # q_A[1] = -np.arctan(g_B[0]/g_B[2])
         q_A[0] = np.arctan2(g_B[1], np.sqrt(g_B[0]**2 + g_B[2]**2))
         q_A[1] = np.arctan2(-g_B[0], g_B[2])
         return q_A
@@ -274,15 +273,17 @@ class Estimator:
         ], dtype=np.float32)
 
 
-def run_filter_on_experiment(exp):
+def run_filter_on_experiment(exp, start_time=None, end_time=None):
     """
-    Run the estimator filter on a single experiment.
+    Run the complementary filter on an experiment.
     
     Args:
-        exp: Experiment object with raw data
+        exp: Experiment object
+        start_time: Optional start time for filtering (seconds)
+        end_time: Optional end time for filtering (seconds)
         
     Returns:
-        Dictionary with time and estimated states
+        Dictionary with time, estimated orientation, and velocities
     """
     df = exp.data
     
@@ -334,7 +335,8 @@ def run_filter_on_experiment(exp):
         motor_states[0, 0] = df['/q_DR/drive_wheel'].iloc[i]
         motor_states[1, 0] = df['/dq_DR/drive_wheel'].iloc[i]
         motor_states[2, 0] = df['/ddq_DR/drive_wheel'].iloc[i]
-        # Reaction wheel is index 1, but we'll use drive wheel data for both if reaction not available
+        
+        # Reaction wheel
         if '/q_DR/reaction_wheel' in df.columns:
             motor_states[0, 1] = df['/q_DR/reaction_wheel'].iloc[i]
             motor_states[1, 1] = df['/dq_DR/reaction_wheel'].iloc[i]
@@ -345,7 +347,7 @@ def run_filter_on_experiment(exp):
         # Update estimator
         state = estimator.update(omega_B, a_B, motor_states)
         
-        # Store results
+        # Store results - state returns: [yaw, roll, pitch, yaw_vel, roll_vel, pitch_vel, ...]
         yaw[i] = state[0]
         roll[i] = state[1]
         pitch[i] = state[2]
@@ -364,145 +366,183 @@ def run_filter_on_experiment(exp):
     }
 
 
+def plot_filter_results(time, filter_results, reference_data=None, vicon_data=None, 
+                       onboard_data=None, title="Filter Results"):
+    """
+    Plot the filter estimation results with optional ground truth comparison.
+    
+    Args:
+        time: Time array
+        filter_results: Dictionary with filter outputs (from complementary filter)
+        reference_data: Optional dictionary with reference data (generic reference)
+        vicon_data: Optional dictionary with Vicon ground truth data {'yaw', 'roll', 'pitch'}
+        onboard_data: Optional dictionary with onboard estimate data {'yaw', 'roll', 'pitch'}
+        title: Plot title
+        
+    Returns:
+        Figure object
+    """
+    fig, axes = plt.subplots(3, 1, figsize=(14, 10))
+    fig.suptitle(title, fontsize=14)
+    
+    angles = ['roll', 'pitch', 'yaw']  # Reorder to match standard RPY convention
+    labels = ['Roll', 'Pitch', 'Yaw']
+    
+    for i, (angle, label) in enumerate(zip(angles, labels)):
+        ax = axes[i]
+        
+        # Plot filter estimate (primary result)
+        ax.plot(time, filter_results[angle], 
+               label=f'{label} (Complementary Filter)', 
+               linewidth=1.5, color='blue')
+        
+        # Plot onboard estimate if provided
+        if onboard_data and angle in onboard_data:
+            ax.plot(time, onboard_data[angle], 
+                   label=f'{label} (Onboard Estimate)', 
+                   linestyle='--', linewidth=1.0, color='orange', alpha=0.8)
+        
+        # Plot Vicon ground truth if provided
+        if vicon_data and angle in vicon_data:
+            vicon_angles = vicon_data[angle].copy()
+            
+            # Align yaw offset (Vicon and filter may have different initial yaw)
+            if angle == 'yaw':
+                vicon_angles = vicon_angles - np.mean(vicon_angles) + np.mean(filter_results[angle])
+            
+            ax.plot(time, vicon_angles, 
+                   label=f'{label} (Vicon Ground Truth)', 
+                   linestyle=':', linewidth=1.5, color='green', alpha=0.8)
+        
+        # Plot generic reference if provided (and no specific onboard/vicon data)
+        if reference_data and angle in reference_data and not onboard_data and not vicon_data:
+            ax.plot(time, reference_data[angle], 
+                   label=f'{label} (Reference)', 
+                   linestyle='--', alpha=0.7)
+        
+        ax.set_ylabel(f'{label} [rad]')
+        ax.set_xlabel('Time [s]')
+        ax.legend(loc='upper right')
+        ax.grid(True, alpha=0.3)
+        ax.set_title(f'{label} Angle')
+    
+    plt.tight_layout()
+    return fig
+
+
 def main():
-    # Load the dataset from the data folder (raw data, no preprocessing)
+    """
+    Main function to run the complementary filter example.
+    
+    Processes experiments from the dataset and generates comparison plots
+    with onboard estimates and Vicon ground truth (when available).
+    """
+    # Load dataset
     ds = Dataset("../../data")
     
-    # Create output directory if it doesn't exist
-    os.makedirs("plots/estimator", exist_ok=True)
+    # Select groups to process
+    groups_to_process = ["yaw", "pitch", "roll"]
     
-    # Process each group and experiment
-    for group_name, group in ds.groups.items():
-        print(f"\nProcessing group: {group_name}")
+    # Create output directory
+    os.makedirs("plots", exist_ok=True)
+    
+    print("=" * 80)
+    print("COMPLEMENTARY FILTER ESTIMATION EXAMPLE")
+    print("=" * 80)
+    print()
+    
+    for group_name in groups_to_process:
+        if group_name not in ds.groups:
+            print(f"Group '{group_name}' not found in dataset, skipping...")
+            continue
         
-        for exp_idx, exp in enumerate(group.experiments):
-            print(f"  Experiment {exp_idx}")
-            
-            # Run the filter
-            result = run_filter_on_experiment(exp)
-            
-            if result is None:
-                print(f"    Skipping due to missing fields")
-                continue
-            
-            # Find start and end indices for cutting (actions nonzero + 2s margin)
-            if '/tau_DR_command/reaction_wheel' not in exp.data.columns:
-                print(f"    Skipping: no action command data")
-                continue
-            
-            action_data = exp.data['/tau_DR_command/reaction_wheel'].to_numpy()
-            time_full = result['time']
-            
-            # Find where actions are nonzero
-            nonzero_idx = np.where(np.abs(action_data) > 0)[0]
-            if len(nonzero_idx) == 0:
-                print(f"    Skipping: no nonzero actions")
-                continue
-            
-            start_idx = nonzero_idx[0]
-            end_idx = nonzero_idx[-1]
-            
-            # Add 2 second margins (assuming 1ms sampling = 2000 samples per 2s)
-            dt_sample = time_full[1] - time_full[0]
-            margin_samples = int(2.0 / dt_sample)
-            
-            start_idx = max(0, start_idx + margin_samples)
-            end_idx = min(len(time_full) - 1, end_idx - margin_samples)
-            
-            if start_idx >= end_idx:
-                print(f"    Skipping: insufficient data after cutting")
-                continue
-            
-            # Cut the data for visualization
-            time_cut = time_full[start_idx:end_idx+1]
-            roll_cut = result['roll'][start_idx:end_idx+1]
-            pitch_cut = result['pitch'][start_idx:end_idx+1]
-            yaw_cut = result['yaw'][start_idx:end_idx+1]
-            
-            # Extract onboard q_yrp estimates if available
-            has_q_yrp = all(f in exp.data.columns for f in ['/q_yrp/yaw', '/q_yrp/roll', '/q_yrp/pitch'])
-            if has_q_yrp:
-                yaw_onboard = exp.data['/q_yrp/yaw'].to_numpy()[start_idx:end_idx+1]
-                roll_onboard = exp.data['/q_yrp/roll'].to_numpy()[start_idx:end_idx+1]
-                pitch_onboard = exp.data['/q_yrp/pitch'].to_numpy()[start_idx:end_idx+1]
-            
-            # Extract Vicon data if available
-            vicon_quat_fields = [
-                "/vicon_orientation_wxyz/w",
-                "/vicon_orientation_wxyz/x",
-                "/vicon_orientation_wxyz/y",
-                "/vicon_orientation_wxyz/z"
-            ]
-            
-            has_vicon = all(f in exp.data.columns for f in vicon_quat_fields)
-            
-            if has_vicon:
-                qw = exp.data["/vicon_orientation_wxyz/w"].to_numpy()
-                qx = exp.data["/vicon_orientation_wxyz/x"].to_numpy()
-                qy = exp.data["/vicon_orientation_wxyz/y"].to_numpy()
-                qz = exp.data["/vicon_orientation_wxyz/z"].to_numpy()
+        group = ds.groups[group_name]
+        print(f"\nProcessing group: {group_name}")
+        print(f"  Number of experiments: {len(group.experiments)}")
+        
+        # Process first 3 experiments as examples
+        with PdfPages(f"plots/filter_estimation_{group_name}.pdf") as pdf:
+            for exp_idx, exp in enumerate(group.experiments[:3]):
+                print(f"  Processing experiment {exp_idx}...")
                 
-                yaw_vicon, roll_vicon, pitch_vicon = quaternion_to_euler_zxy(qw, qx, qy, qz)
+                # Run filter
+                filter_results = run_filter_on_experiment(exp)
+                time = filter_results['time']
                 
-                # Cut vicon data
-                roll_vicon_cut = roll_vicon[start_idx:end_idx+1]
-                pitch_vicon_cut = pitch_vicon[start_idx:end_idx+1]
-                yaw_vicon_cut = yaw_vicon[start_idx:end_idx+1]
+                # Get onboard estimate data if available
+                onboard_data = None
+                if all(f'/q_yrp/{a}' in exp.data.columns for a in ['yaw', 'roll', 'pitch']):
+                    # Slice to match filter results time range
+                    df = exp.data
+                    if df.index.name == '_time':
+                        mask = (df.index >= time[0]) & (df.index <= time[-1])
+                    else:
+                        mask = (df['_time'] >= time[0]) & (df['_time'] <= time[-1])
+                    
+                    df_sliced = df[mask]
+                    onboard_data = {
+                        'yaw': df_sliced['/q_yrp/yaw'].to_numpy(),
+                        'roll': df_sliced['/q_yrp/roll'].to_numpy(),
+                        'pitch': df_sliced['/q_yrp/pitch'].to_numpy()
+                    }
                 
-                # Align vicon roll and yaw to match filter estimate (average over entire sequence)
-                roll_vicon_cut = roll_vicon_cut - np.mean(roll_vicon_cut) + np.mean(roll_cut)
-                yaw_vicon_cut = yaw_vicon_cut - np.mean(yaw_vicon_cut) + np.mean(yaw_cut)
-            
-            # Create plots
-            fig, axes = plt.subplots(3, 1, figsize=(12, 10))
-            fig.suptitle(f"Filter Estimation: {group_name} - Experiment {exp_idx}", fontsize=14)
-            
-            # Roll
-            axes[0].plot(time_cut, roll_cut, label='Filter Estimate', linewidth=1.5)
-            if has_vicon:
-                axes[0].plot(time_cut, roll_vicon_cut, label='Vicon Ground Truth', linewidth=1.5, linestyle='--', alpha=0.7)
-            if has_q_yrp:
-                axes[0].plot(time_cut, roll_onboard, label='Onboard q_yrp', linewidth=1.0, linestyle=':', alpha=0.8)
-            axes[0].set_ylabel('Roll [rad]')
-            axes[0].set_xlabel('Time [s]')
-            axes[0].legend()
-            axes[0].grid(True, alpha=0.3)
-            axes[0].set_title('Roll Angle')
-            
-            # Pitch
-            axes[1].plot(time_cut, pitch_cut, label='Filter Estimate', linewidth=1.5)
-            if has_vicon:
-                axes[1].plot(time_cut, pitch_vicon_cut, label='Vicon Ground Truth', linewidth=1.5, linestyle='--', alpha=0.7)
-            if has_q_yrp:
-                axes[1].plot(time_cut, pitch_onboard, label='Onboard q_yrp', linewidth=1.0, linestyle=':', alpha=0.8)
-            axes[1].set_ylabel('Pitch [rad]')
-            axes[1].set_xlabel('Time [s]')
-            axes[1].legend()
-            axes[1].grid(True, alpha=0.3)
-            axes[1].set_title('Pitch Angle')
-            
-            # Yaw
-            axes[2].plot(time_cut, yaw_cut, label='Filter Estimate', linewidth=1.5)
-            if has_vicon:
-                axes[2].plot(time_cut, yaw_vicon_cut, label='Vicon Ground Truth', linewidth=1.5, linestyle='--', alpha=0.7)
-            if has_q_yrp:
-                axes[2].plot(time_cut, yaw_onboard, label='Onboard q_yrp', linewidth=1.0, linestyle=':', alpha=0.8)
-            axes[2].set_ylabel('Yaw [rad]')
-            axes[2].set_xlabel('Time [s]')
-            axes[2].legend()
-            axes[2].grid(True, alpha=0.3)
-            axes[2].set_title('Yaw Angle')
-            
-            plt.tight_layout()
-            
-            # Save the figure
-            output_path = f"plots/estimator/filter_{group_name}_exp{exp_idx}.pdf"
-            plt.savefig(output_path)
-            plt.close()
-            
-            print(f"    Saved: {output_path}")
+                # Get Vicon ground truth data if available
+                vicon_data = None
+                vicon_quat_fields = [
+                    "/vicon_orientation_wxyz/w",
+                    "/vicon_orientation_wxyz/x",
+                    "/vicon_orientation_wxyz/y",
+                    "/vicon_orientation_wxyz/z"
+                ]
+                
+                if all(f in exp.data.columns for f in vicon_quat_fields):
+                    df = exp.data
+                    if df.index.name == '_time':
+                        mask = (df.index >= time[0]) & (df.index <= time[-1])
+                    else:
+                        mask = (df['_time'] >= time[0]) & (df['_time'] <= time[-1])
+                    
+                    df_sliced = df[mask]
+                    
+                    qw = df_sliced["/vicon_orientation_wxyz/w"].to_numpy()
+                    qx = df_sliced["/vicon_orientation_wxyz/x"].to_numpy()
+                    qy = df_sliced["/vicon_orientation_wxyz/y"].to_numpy()
+                    qz = df_sliced["/vicon_orientation_wxyz/z"].to_numpy()
+                    
+                    # Check if vicon data is valid (not all zeros)
+                    if not (np.all(qw == 0) and np.all(qx == 0) and np.all(qy == 0) and np.all(qz == 0)):
+                        yaw_vicon, roll_vicon, pitch_vicon = quaternion_to_euler_zxy(qw, qx, qy, qz)
+                        vicon_data = {
+                            'yaw': yaw_vicon,
+                            'roll': roll_vicon,
+                            'pitch': pitch_vicon
+                        }
+                        print(f"    ✓ Vicon ground truth data available")
+                    else:
+                        print(f"    ⚠ Vicon data is all zeros (no ground truth)")
+                else:
+                    print(f"    ⚠ No Vicon data available")
+                
+                # Plot results
+                title_parts = [f"Filter Estimation: {group_name} - Experiment {exp_idx}"]
+                if vicon_data:
+                    title_parts.append("(with Vicon Ground Truth)")
+                
+                fig = plot_filter_results(
+                    time,
+                    filter_results,
+                    vicon_data=vicon_data,
+                    onboard_data=onboard_data,
+                    title=" ".join(title_parts)
+                )
+                pdf.savefig(fig)
+                plt.close(fig)
+        
+        print(f"  Plots saved to: plots/filter_estimation_{group_name}.pdf")
     
-    print("\nFilter estimation complete!")
+    print("\n" + "=" * 80)
+    print("DONE")
+    print("=" * 80)
 
 
 if __name__ == "__main__":
