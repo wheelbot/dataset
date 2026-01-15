@@ -165,8 +165,8 @@ def statistics(dataset_path: str, cutoff_seconds: float = 7.0):
         'yaw': {'name': 'Yaw Random', 'controller': 'AMPC', 'reference': 'PRBS'},
         'yaw_circle': {'name': 'Yaw Circles', 'controller': 'AMPC', 'reference': 'Geometric'},
         'yaw_figure_eight': {'name': 'Yaw Eight', 'controller': 'AMPC', 'reference': 'Geometric'},
-        'yaw_human': {'name': 'Human', 'controller': 'AMPC', 'reference': 'Letters'},
-        'racetrack': {'name': 'Racetrack', 'controller': 'RL', 'reference': 'track'},
+        'yaw_human': {'name': 'Human', 'controller': 'AMPC', 'reference': 'Geometric'},
+        'racetrack': {'name': 'Racetrack', 'controller': 'RL', 'reference': 'Track'},
     }
     
     # Collect statistics by display name (combining roll and roll_max)
