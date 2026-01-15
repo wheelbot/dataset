@@ -20,13 +20,13 @@ class Experiment:
     """
     Represents a single experiment with timeseries data and metadata.
     
-    Loads CSV data and JSON metadata on initialization. Provides methods for
-    filtering, resampling, time-based cutting, and data export.
+    Uses lazy loading - CSV data and JSON metadata are only loaded when first accessed.
+    Provides methods for filtering, resampling, time-based cutting, and data export.
     """
     
     def __init__(self, csv_path: str, meta_path: str):
         """
-        Initialize an experiment by loading data and metadata.
+        Initialize an experiment by storing paths (lazy loading).
         
         Args:
             csv_path: Path to the CSV file containing timeseries data.
@@ -34,8 +34,42 @@ class Experiment:
         """
         self.csv_path = csv_path
         self.meta_path = meta_path
-        self.data = self._load_csv(csv_path)
-        self.meta = self._load_meta(meta_path)
+        self._data = None
+        self._meta = None
+
+    @property
+    def data(self) -> pd.DataFrame:
+        """
+        Lazy load and return the experiment data.
+        
+        Returns:
+            DataFrame with '_time' column as index if it exists.
+        """
+        if self._data is None:
+            self._data = self._load_csv(self.csv_path)
+        return self._data
+    
+    @data.setter
+    def data(self, value: pd.DataFrame):
+        """Set the data directly (used by operations that create new experiments)."""
+        self._data = value
+    
+    @property
+    def meta(self) -> Dict[str, Any]:
+        """
+        Lazy load and return the experiment metadata.
+        
+        Returns:
+            Dictionary containing metadata.
+        """
+        if self._meta is None:
+            self._meta = self._load_meta(self.meta_path)
+        return self._meta
+    
+    @meta.setter
+    def meta(self, value: Dict[str, Any]):
+        """Set the metadata directly (used by operations that create new experiments)."""
+        self._meta = value
 
     @staticmethod
     def _load_csv(path: str) -> pd.DataFrame:
@@ -81,8 +115,8 @@ class Experiment:
         new = Experiment.__new__(Experiment)
         new.csv_path = self.csv_path
         new.meta_path = self.meta_path
-        new.meta = self.meta
-        new.data = filter_fn(self.data.copy(deep=True))
+        new._meta = self._meta  # Share metadata reference if already loaded
+        new._data = filter_fn(self.data.copy(deep=True))
         return new
 
     def resample(self, dt: float):
@@ -108,8 +142,8 @@ class Experiment:
         new = Experiment.__new__(Experiment)
         new.csv_path = self.csv_path
         new.meta_path = self.meta_path
-        new.meta = self.meta
-        new.data = df_resampled
+        new._meta = self._meta  # Share metadata reference if already loaded
+        new._data = df_resampled
         return new
 
 
@@ -131,8 +165,8 @@ class Experiment:
         new = Experiment.__new__(Experiment)
         new.csv_path = self.csv_path
         new.meta_path = self.meta_path
-        new.meta = self.meta
-        new.data = df
+        new._meta = self._meta  # Share metadata reference if already loaded
+        new._data = df
         return new
 
     def cut_by_condition(
@@ -180,8 +214,8 @@ class Experiment:
         new = Experiment.__new__(Experiment)
         new.csv_path = self.csv_path
         new.meta_path = self.meta_path
-        new.meta = self.meta
-        new.data = df
+        new._meta = self._meta  # Share metadata reference if already loaded
+        new._data = df
         return new
 
     def filter_by_metadata(self, **conditions):
