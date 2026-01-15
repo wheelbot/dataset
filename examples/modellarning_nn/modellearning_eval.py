@@ -41,9 +41,10 @@ def evaluate_rollout(model_path, dataset_path, rollout_length=100, save_prefix="
     with open(dataset_path, "rb") as f:
         data = pickle.load(f)
     
-    states = jnp.squeeze(jnp.array(data["states"]))
-    actions = jnp.array(data["actions"])[:, :rollout_length, :]
-    next_states = jnp.array(data["nextstates"])[:, :rollout_length, :]
+    test_data = data["test"]
+    states = jnp.squeeze(jnp.array(test_data["states"]))
+    actions = jnp.array(test_data["actions"])[:, :rollout_length, :]
+    next_states = jnp.array(test_data["nextstates"])[:, :rollout_length, :]
     dataset_states_labels = data.get("states_labels", None)
     dataset_actions_labels = data.get("actions_labels", None)
     
@@ -358,60 +359,21 @@ def evaluate_feedback_control(model_path, rollout_length=500, save_prefix="feedb
 
 
 if __name__ == "__main__":
-    # print("=" * 70)
-    # print("Evaluating Dynamics Models on 100-step Rollouts")
-    # print("=" * 70)
-    
-    # dataset_path = "dataset/dataset_100_step.pkl"
-    # rollout_length = 100
-    
-    # print("\n" + "=" * 70)
-    # print("ONE-STEP TRAINED MODEL")
-    # print("=" * 70)
-    # mse_onestep = evaluate_rollout(
-    #     model_path="models/trained_model_onestep.eqx",
-    #     dataset_path=dataset_path,
-    #     rollout_length=rollout_length,
-    #     save_prefix="rollout_100step"
-    # )
-
-    # print("\n" + "=" * 70)
-    # print("MULTI-STEP TRAINED MODEL (with curriculum)")
-    # print("=" * 70)
-    # mse_multistep = evaluate_rollout(
-    #     model_path="models/trained_model_multistep.eqx",
-    #     dataset_path=dataset_path,
-    #     rollout_length=rollout_length,
-    #     save_prefix="rollout_100step"
-    # )
-    
-    # print("\n" + "=" * 70)
-    # print("COMPARISON")
-    # print("=" * 70)
-    # print(f"One-step training:   MSE = {mse_onestep:.6f}")
-    # print(f"Multi-step training: MSE = {mse_multistep:.6f}")
-    # improvement = (1 - mse_multistep / mse_onestep) * 100
-    # if improvement > 0:
-    #     print(f"Improvement:         {improvement:.1f}% (multi-step is better)")
-    # else:
-    #     print(f"Degradation:         {-improvement:.1f}% (one-step is better)")
-    # print("=" * 70)
-    
-    # print("\n" + "=" * 70)
-    # print("FEEDBACK CONTROL EVALUATION")
-    # print("=" * 70)
-    
-    # print("\n" + "=" * 70)
-    # print("ONE-STEP TRAINED MODEL WITH FEEDBACK CONTROL")
-    # print("=" * 70)
-    # result_onestep = evaluate_feedback_control(
-    #     model_path="models/trained_model_onestep.eqx",
-    #     rollout_length=10,
-    #     save_prefix="feedback_control"
-    # )
+    dataset_path = "dataset/dataset_100_step.pkl"
+    rollout_length = 50  # Matching the USER's recent manual change
     
     print("\n" + "=" * 70)
-    print("MULTI-STEP TRAINED MODEL WITH FEEDBACK CONTROL")
+    print("MULTI-STEP TRAINED MODEL (with curriculum)")
+    print("=" * 70)
+    mse_multistep = evaluate_rollout(
+        model_path="models/trained_model_multistep.eqx",
+        dataset_path=dataset_path,
+        rollout_length=rollout_length,
+        save_prefix="rollout_50step"
+    )
+    
+    print("\n" + "=" * 70)
+    print("FEEDBACK CONTROL EVALUATION (MULTI-STEP MODEL)")
     print("=" * 70)
     result_multistep = evaluate_feedback_control(
         model_path="models/trained_model_multistep.eqx",
@@ -420,5 +382,5 @@ if __name__ == "__main__":
     )
     
     print("\n" + "=" * 70)
-    print("Feedback control evaluation complete!")
+    print("Evaluation complete!")
     print("=" * 70)

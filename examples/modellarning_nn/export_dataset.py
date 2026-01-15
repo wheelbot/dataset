@@ -139,49 +139,82 @@ def example_usage():
     fields_actions = [
         "/tau_DR_command/drive_wheel","/tau_DR_command/reaction_wheel",
     ]
-    # states, actions, nextstates, _ = to_prediction_dataset(
-    #     ds.map(cut_and_filter_fn),
-    #     fields_states=fields_states,
-    #     fields_actions=fields_actions        
-    # )
-    # print(f"States shape: {states.shape}")
-    # print(f"Actions shape: {actions.shape}")
-    # print(f"Next states shape: {nextstates.shape}")
-    # with open("dataset/dataset_1_step.pkl", "wb") as f:
-    #     pickle.dump({
-    #         "states": states,
-    #         "actions": actions,
-    #         "nextstates": nextstates,
-    #         "states_labels": fields_states,
-    #         "actions_labels": fields_actions,
-    #         "dt": dt
-    #     }, f)
+    
+    ds_train = Dataset("../../data")
+    ds_test = Dataset("../../data_test")
+
+    print("Processing training data (1-step)...")
+    train_states, train_actions, train_nextstates, _ = to_prediction_dataset(
+        ds_train.map(cut_and_filter_fn),
+        fields_states=fields_states,
+        fields_actions=fields_actions        
+    )
+    
+    print("Processing testing data (1-step)...")
+    test_states, test_actions, test_nextstates, _ = to_prediction_dataset(
+        ds_test.map(cut_and_filter_fn),
+        fields_states=fields_states,
+        fields_actions=fields_actions        
+    )
+
+    with open("dataset/dataset_1_step.pkl", "wb") as f:
+        pickle.dump({
+            "train": {
+                "states": train_states,
+                "actions": train_actions,
+                "nextstates": train_nextstates,
+            },
+            "test": {
+                "states": test_states,
+                "actions": test_actions,
+                "nextstates": test_nextstates,
+            },
+            "states_labels": fields_states,
+            "actions_labels": fields_actions,
+            "dt": dt
+        }, f)
         
-    states, actions, nextstates, _ = to_prediction_dataset(
-        ds.map(cut_and_filter_fn),
+    print("Processing training data (100-step)...")
+    train_states_100, train_actions_100, train_nextstates_100, _ = to_prediction_dataset(
+        ds_train.map(cut_and_filter_fn),
         fields_states=fields_states,
         fields_actions=fields_actions,
         N_future=int(1/dt),
         skip_N=int(1/dt) 
     )
-    print(f"States shape: {states.shape}")
-    print(f"Actions shape: {actions.shape}")
-    print(f"Next states shape: {nextstates.shape}")
+    
+    print("Processing testing data (100-step)...")
+    test_states_100, test_actions_100, test_nextstates_100, _ = to_prediction_dataset(
+        ds_test.map(cut_and_filter_fn),
+        fields_states=fields_states,
+        fields_actions=fields_actions,
+        N_future=int(1/dt),
+        skip_N=int(1/dt) 
+    )
+
     with open("dataset/dataset_100_step.pkl", "wb") as f:
         pickle.dump({
-            "states": states,
-            "actions": actions,
-            "nextstates": nextstates,
+            "train": {
+                "states": train_states_100,
+                "actions": train_actions_100,
+                "nextstates": train_nextstates_100,
+            },
+            "test": {
+                "states": test_states_100,
+                "actions": test_actions_100,
+                "nextstates": test_nextstates_100,
+            },
             "states_labels": fields_states,
             "actions_labels": fields_actions,
             "dt": dt
         }, f)
             
 def vrp():
-    # Load a dataset
-    ds = Dataset("../../data")
+    # Load datasets
+    ds_train = Dataset("../../data")
+    ds_test = Dataset("../../data_test")
 
-    # # Implement some acausal filter
+    # Implement some acausal filter
     import scipy.signal as signal
     lowpass_cutoff_hz=20
     def my_lowpass(df):
@@ -194,7 +227,7 @@ def vrp():
         return df2
 
     # Define the same filters to all experiments in a group or dataset
-    dt = 0.01
+    dt = 0.01 # 0.006 #0.01 # 0.006
     cut_and_filter_fn = lambda exp: (
         exp
         .cut_by_condition(
@@ -217,22 +250,73 @@ def vrp():
         "/tau_DR_command/drive_wheel","/tau_DR_command/reaction_wheel",
     ]
         
-    states, actions, nextstates, _ = to_prediction_dataset(
-        ds.map(lambda exp: exp.filter_by_metadata(experiment_status="success")).map(cut_and_filter_fn),
+    print("Processing 1-step datasets...")
+    train_states_1, train_actions_1, train_nextstates_1, _ = to_prediction_dataset(
+        ds_train.map(lambda exp: exp.filter_by_metadata(experiment_status="success")).map(cut_and_filter_fn),
         fields_states=fields_states,
         fields_actions=fields_actions,
-        N_future=int(1/dt),
-        skip_N=int(1/dt)
+        N_future=1,
+        skip_N=1
     )
-    print(f"States shape: {states.shape}")
-    print(f"Actions shape: {actions.shape}")
-    print(f"Next states shape: {nextstates.shape}")
+    test_states_1, test_actions_1, test_nextstates_1, _ = to_prediction_dataset(
+        ds_test.map(lambda exp: exp.filter_by_metadata(experiment_status="success")).map(cut_and_filter_fn),
+        fields_states=fields_states,
+        fields_actions=fields_actions,
+        N_future=1,
+        skip_N=1
+    )
+
+    with open("dataset/dataset_1_step.pkl", "wb") as f:
+        pickle.dump({
+            "train": {
+                "states": train_states_1,
+                "actions": train_actions_1,
+                "nextstates": train_nextstates_1,
+            },
+            "test": {
+                "states": test_states_1,
+                "actions": test_actions_1,
+                "nextstates": test_nextstates_1,
+            },
+            "states_labels": fields_states,
+            "actions_labels": fields_actions,
+            "dt": dt
+        }, f)
+
+    print("Processing 100-step datasets...")
+    train_states, train_actions, train_nextstates, _ = to_prediction_dataset(
+        ds_train.map(lambda exp: exp.filter_by_metadata(experiment_status="success")).map(cut_and_filter_fn),
+        fields_states=fields_states,
+        fields_actions=fields_actions,
+        N_future=100, #int(1/dt),
+        skip_N=100 #int(1/dt)
+    )
+    
+    print("Processing testing data...")
+    test_states, test_actions, test_nextstates, _ = to_prediction_dataset(
+        ds_test.map(lambda exp: exp.filter_by_metadata(experiment_status="success")).map(cut_and_filter_fn),
+        fields_states=fields_states,
+        fields_actions=fields_actions,
+        N_future=100, #int(1/dt),
+        skip_N=100 #int(1/dt)
+    )
+
+    print(f"Train States shape: {train_states.shape}")
+    print(f"Test States shape: {test_states.shape}")
+    
     os.makedirs("dataset", exist_ok=True)
     with open("dataset/dataset_100_step.pkl", "wb") as f:
         pickle.dump({
-            "states": states,
-            "actions": actions,
-            "nextstates": nextstates,
+            "train": {
+                "states": train_states,
+                "actions": train_actions,
+                "nextstates": train_nextstates,
+            },
+            "test": {
+                "states": test_states,
+                "actions": test_actions,
+                "nextstates": test_nextstates,
+            },
             "states_labels": fields_states,
             "actions_labels": fields_actions,
             "dt": dt
@@ -243,5 +327,3 @@ if __name__=="__main__":
     vrp()
     # roll()
     # pitch()
-    
-    
