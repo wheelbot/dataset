@@ -14,6 +14,7 @@ import numpy as np
 from typing import Union
 import fire
 from wheelbot_dataset.usage.dataset import Dataset
+from wheelbot_dataset.fix_yaw_data import fix_yaw_data_for_dataset
 
 
 def consolidate(input_dataset_paths: list[str] | str, output_dataset_path: str):
@@ -423,7 +424,6 @@ def prepare_for_zenodo(
         >>> prepare_for_zenodo(archive_dir="recordings", output_dir="dataset", output_zip="wheelbot_dataset.zip")
     """
     import glob
-    import subprocess
     import zipfile
     
     print("\n" + "=" * 80)
@@ -462,43 +462,21 @@ def prepare_for_zenodo(
     print("\n[Step 2/3] Fixing yaw data with complementary filter...")
     print("-" * 80)
     
-    # Find the fix_yaw_data.py script
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    package_root = os.path.dirname(script_dir)
-    fix_yaw_script = os.path.join(package_root, "examples", "estimator", "fix_yaw_data.py")
+    # Call the fix_yaw_data function directly
+    print(f"Running yaw data correction on {output_dir}...")
     
-    if not os.path.exists(fix_yaw_script):
-        print(f"Warning: fix_yaw_data.py script not found at {fix_yaw_script}")
-        print("Skipping yaw data correction step.")
-    else:
-        print(f"Running fix_yaw_data.py script...")
-        print(f"Script location: {fix_yaw_script}")
+    try:
+        total_success, total_failed = fix_yaw_data_for_dataset(output_dir)
         
-        # Change to the examples/estimator directory to run the script
-        original_cwd = os.getcwd()
-        estimator_dir = os.path.join(package_root, "examples", "estimator")
+        if total_failed > 0:
+            print(f"Warning: {total_failed} files failed to process")
         
-        try:
-            os.chdir(estimator_dir)
-            
-            # Run the fix_yaw_data.py script
-            result = subprocess.run(
-                ["python", "fix_yaw_data.py"],
-                capture_output=True,
-                text=True
-            )
-            
-            # Print the output
-            print(result.stdout)
-            
-            if result.returncode != 0:
-                print(f"Warning: fix_yaw_data.py exited with code {result.returncode}")
-                print("STDERR:", result.stderr)
-            else:
-                print("\n✓ Yaw data correction complete!")
+        print("\n✓ Yaw data correction complete!")
         
-        finally:
-            os.chdir(original_cwd)
+    except Exception as e:
+        print(f"Warning: Error during yaw data correction: {e}")
+        print("Continuing with zip file creation...")
+
     
     # Step 3: Create zip file
     print("\n[Step 3/3] Creating zip file for Zenodo upload...")
