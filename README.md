@@ -289,21 +289,22 @@ Each experiment includes:
 
 Comprehensive examples are available in the `examples/` directory:
 
-### Estimation (`examples/estimator/`)
-- Complementary filter implementations
-- Orientation estimation
-- Comparison between onboard estimation and Vicon ground truth
+### Complementary Filter (`examples/estimator/`)
+- Complementary filter for orientation estimation
+- Comparison with onboard estimates and Vicon ground truth
+- Run with: `python examples/estimator/complementary_filter.py`
 
-### Model Learning (`examples/modellearning_nn/`)
-- Neural network-based dynamics learning
-- One-step and multi-step prediction models
-- Export trained models to CasADi for MPC
-- Example MPC implementation
+### Dynamics Model Learning (`examples/dynamics_model_learning/`)
+- Neural network-based dynamics learning with JAX/Equinox
+- One-step and multi-step prediction models with curriculum learning
+- Dataset export and model training scripts
+- Model evaluation and comparison plots
 
-### System Identification (`examples/sysid/`)
-- Physics-based model identification
-- Equations of motion derivation
-- Parameter estimation from data
+### Time Series Classification (`examples/timeseries_classification/`)
+- Transformer-based classification for surface detection
+- Robot identification from IMU data
+- Control mode classification (autonomous vs. human)
+
 
 ### Basic Usage (`examples/basic_usage.py`)
 
