@@ -7,8 +7,7 @@ to compare their long-term prediction accuracy.
 
 import jax
 import pickle
-from modellearning_common import load_dynamics_model
-from modellearning_multistep_paper import rollout_model
+from modellearning_common import load_dynamics_model, rollout_model
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from matplotlib import rc
@@ -436,7 +435,7 @@ def evaluate_feedback_control(model_path, rollout_length=500, save_prefix="feedb
 
 
 if __name__ == "__main__":
-    dataset_path = "dataset/dataset_100_step.pkl"
+    dataset_path = "dataset/multistep_rollout_dataset.pkl"
     rollout_length = 50  # Matching the USER's recent manual change
     model_path = "models/trained_model_multistep.eqx"
     

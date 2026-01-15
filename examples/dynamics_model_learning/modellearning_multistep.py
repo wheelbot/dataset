@@ -16,30 +16,8 @@ import matplotlib.pyplot as plt
 import tqdm
 from modellearning_common import (
     DynamicsDataset, create_mlp_model, save_dynamics_model,
-    compute_normalization_params
+    compute_normalization_params, rollout_model
 )
-
-
-def rollout_model(model, initial_state, actions_seq):
-    """
-    Roll out the dynamics model for multiple steps.
-    
-    Args:
-        model: Dynamics model that predicts delta_state given [state, action]
-        initial_state: Starting state (nx,) - should be normalized
-        actions_seq: Sequence of actions (N, nu) - should be normalized
-    
-    Returns:
-        predicted_states: (N, nx) predicted states at each timestep
-    """
-    def step_fn(state, action):
-        model_input = jnp.concatenate([state, action])
-        delta_state = model(model_input)
-        next_state = state + delta_state
-        return next_state, next_state
-    
-    _, predicted_states = jax.lax.scan(step_fn, initial_state, actions_seq)
-    return predicted_states
 
 
 def multistep_loss_fn(model, initial_states, actions_seqs, target_states, rollout_length):
@@ -227,7 +205,7 @@ def train_multistep(
 
 
 if __name__ == "__main__":
-    with open("dataset/dataset_100_step.pkl", "rb") as f:
+    with open("dataset/multistep_rollout_dataset.pkl", "rb") as f:
         data = pickle.load(f)
     
     train_data = data["train"]

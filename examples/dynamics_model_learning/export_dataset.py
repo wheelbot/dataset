@@ -103,7 +103,7 @@ def export_dynamics_model_learning_dataset():
     print(f"Test States shape: {test_states.shape}")
     
     os.makedirs("dataset", exist_ok=True)
-    with open("dataset/dataset_100_step.pkl", "wb") as f:
+    with open("dataset/multistep_rollout_dataset.pkl", "wb") as f:
         pickle.dump({
             "train": {
                 "states": train_states,
@@ -119,6 +119,10 @@ def export_dynamics_model_learning_dataset():
             "actions_labels": fields_actions,
             "dt": dt
         }, f)
+    
+    print(f"Saved datasets:")
+    print(f"  - dataset/dataset_1_step.pkl (one-step prediction)")
+    print(f"  - dataset/multistep_rollout_dataset.pkl (100-step rollout)")
         
 
 if __name__=="__main__":

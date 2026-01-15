@@ -177,3 +177,26 @@ def normalize_data(states, actions, next_states, state_mean, state_std, action_m
     return states_norm, actions_norm, next_states_norm
 
 
+def rollout_model(model, initial_state, actions_seq):
+    """
+    Roll out the dynamics model for multiple steps.
+    
+    Args:
+        model: Dynamics model that predicts delta_state given [state, action]
+        initial_state: Starting state (nx,) - should be normalized
+        actions_seq: Sequence of actions (N, nu) - should be normalized
+    
+    Returns:
+        predicted_states: (N, nx) predicted states at each timestep
+    """
+    def step_fn(state, action):
+        model_input = jnp.concatenate([state, action])
+        delta_state = model(model_input)
+        next_state = state + delta_state
+        return next_state, next_state
+    
+    _, predicted_states = jax.lax.scan(step_fn, initial_state, actions_seq)
+    return predicted_states
+
+
+
