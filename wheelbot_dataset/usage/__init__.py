@@ -9,10 +9,9 @@ from wheelbot_dataset.usage.dataset import (
     Experiment,
     ExperimentGroup,
     default_filter,
-    plot_timeseries,
-    plot_histograms,
     to_prediction_dataset,
 )
+from wheelbot_dataset.usage.visualization import plot_timeseries, plot_histograms
 
 __all__ = [
     "Dataset",
