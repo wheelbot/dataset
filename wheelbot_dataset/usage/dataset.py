@@ -599,6 +599,11 @@ def to_prediction_dataset(
         if fields_observations:
             exp_observations_np = exp.to_numpy(fields_observations)
         num_sections = (exp_actions_np.shape[0]-N_future-N_past)//skip_N
+        
+        # Return None if experiment is too short to produce any snippets
+        if num_sections <= 0:
+            return None, None, None, None
+        
         states = []
         next_states = []
         actions = []
@@ -620,11 +625,18 @@ def to_prediction_dataset(
         all_states, all_actions, all_next_states, all_observations = [], [], [], []
         for exp in ds.experiments:
             states, actions, next_states, observation = exp_to_N_step_prediction(exp)
-            all_states.append(states)
-            all_actions.append(actions)
-            all_next_states.append(next_states)
-            if fields_observations:
-                all_observations.append(observation)
+            # Skip experiments that are too short
+            if states is not None:
+                all_states.append(states)
+                all_actions.append(actions)
+                all_next_states.append(next_states)
+                if fields_observations:
+                    all_observations.append(observation)
+        
+        # Handle case where no valid experiments exist
+        if len(all_states) == 0:
+            return np.array([]), np.array([]), np.array([]), np.array([])
+        
         return (
             np.concatenate(all_states, axis=0),
             np.concatenate(all_actions, axis=0),
@@ -636,11 +648,18 @@ def to_prediction_dataset(
         for group in ds.groups.values():
             for exp in group.experiments:
                 states, actions, next_states, observation = exp_to_N_step_prediction(exp)
-                all_states.append(states)
-                all_actions.append(actions)
-                all_next_states.append(next_states)
-                if fields_observations:
-                    all_observations.append(observation)
+                # Skip experiments that are too short
+                if states is not None:
+                    all_states.append(states)
+                    all_actions.append(actions)
+                    all_next_states.append(next_states)
+                    if fields_observations:
+                        all_observations.append(observation)
+        
+        # Handle case where no valid experiments exist
+        if len(all_states) == 0:
+            return np.array([]), np.array([]), np.array([]), np.array([])
+        
         return (
             np.concatenate(all_states, axis=0),
             np.concatenate(all_actions, axis=0),
