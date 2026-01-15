@@ -356,17 +356,3 @@ The example script shows:
 ## 🛠️ Recording New Data
 
 For information on recording new trajectories, see [README_RECORDING.md](README_RECORDING.md).
-
-## 📚 Citation
-
-If you use this dataset in your research, please cite:
-
-```bibtex
-@misc{wheelbot-dataset-2026,
-  title={Wheelbot Dataset: A Comprehensive Dataset for Self-Balancing Robot Research},
-  author={Wheelbot Team},
-  year={2026},
-  publisher={Zenodo},
-  howpublished={\url{https://zenodo.org/record/XXXXXX}}
-}
-```
