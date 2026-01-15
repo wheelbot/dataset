@@ -87,23 +87,34 @@ def consolidate(input_dataset_paths: list[str] | str, output_dataset_path: str):
             
             # Process each experiment
             for exp_num in sorted(experiment_numbers):
-                # Check if all required files exist
-                required_extensions = ['.csv', '.log', '.meta', '.mp4', '.pkl', '.preview.pdf', '.setpoints.pdf']
-                all_files_present = all(
+                # Check if required files exist
+                required_extensions = ['.csv', '.meta']
+                optional_extensions = ['.log', '.mp4', '.pkl', '.preview.pdf', '.setpoints.pdf']
+                
+                required_files_present = all(
                     os.path.exists(os.path.join(group_path, f"{exp_num}{ext}"))
                     for ext in required_extensions
                 )
                 
-                if not all_files_present:
-                    print(f"  Skipping incomplete experiment {group_name}/{exp_num}")
+                if not required_files_present:
+                    print(f"  Skipping incomplete experiment {group_name}/{exp_num} (missing .csv or .meta)")
                     continue
                 
                 # Copy all files with new numbering
                 new_num = next_number[group_name]
+                
+                # Copy required files
                 for ext in required_extensions:
                     src = os.path.join(group_path, f"{exp_num}{ext}")
                     dst = os.path.join(output_group_path, f"{new_num}{ext}")
                     shutil.copy2(src, dst)
+                
+                # Copy optional files if they exist
+                for ext in optional_extensions:
+                    src = os.path.join(group_path, f"{exp_num}{ext}")
+                    if os.path.exists(src):
+                        dst = os.path.join(output_group_path, f"{new_num}{ext}")
+                        shutil.copy2(src, dst)
                 
                 print(f"  Copied {group_name}/{exp_num} -> {group_name}/{new_num}")
                 next_number[group_name] += 1
@@ -153,6 +164,8 @@ def statistics(dataset_path: str, cutoff_seconds: float = 7.0):
         'yaw': {'name': 'Yaw Random', 'controller': 'AMPC', 'reference': 'PRBS'},
         'yaw_circle': {'name': 'Yaw Circles', 'controller': 'AMPC', 'reference': 'Geometric'},
         'yaw_figure_eight': {'name': 'Yaw Eight', 'controller': 'AMPC', 'reference': 'Geometric'},
+        'yaw_human': {'name': 'Human', 'controller': 'AMPC', 'reference': 'Letters'},
+        'racetrack': {'name': 'Racetrack', 'controller': 'RL', 'reference': 'track'},
     }
     
     # Collect statistics by display name (combining roll and roll_max)
@@ -191,7 +204,7 @@ def statistics(dataset_path: str, cutoff_seconds: float = 7.0):
                 stats[display_name]['crashes'] += 1
     
     # Print individual group statistics
-    for display_name in ['Pitch', 'Roll', 'Velocity', 'Vel + Roll', 'Vel + Pitch', 'Yaw Random', 'Yaw Circles', 'Yaw Eight']:
+    for display_name in ['Pitch', 'Roll', 'Velocity', 'Vel + Roll', 'Vel + Pitch', 'Yaw Random', 'Yaw Circles', 'Yaw Eight', 'Human', 'Racetrack']:
         if display_name in stats:
             info = stats[display_name]
             print(f"\n{display_name}")
@@ -207,7 +220,7 @@ def statistics(dataset_path: str, cutoff_seconds: float = 7.0):
     print()
     
     # Define the order of rows in the table
-    row_order = ['Pitch', 'Roll', 'Vel + Roll', 'Vel + Pitch', 'Yaw Random', 'Yaw Circles', 'Yaw Eight']
+    row_order = ['Pitch', 'Roll', 'Vel + Roll', 'Vel + Pitch', 'Yaw Random', 'Yaw Circles', 'Yaw Eight', 'Human', 'Racetrack']
     
     # Calculate totals for the "All" row
     total_trajectories = sum(info['num_trajs'] for info in stats.values())
@@ -384,9 +397,180 @@ def updaterates(dataset_path: str, group_name: str, index: int):
     print()
 
 
+def prepare_for_zenodo(
+    archive_dir: str = "data_archive",
+    output_dir: str = "data",
+    output_zip: str = "data.zip"
+):
+    """
+    Prepare dataset for upload to Zenodo.
+    
+    This function performs three main steps:
+    1. Consolidates all datasets in the archive directory into a single output directory
+    2. Fixes yaw data in yaw, yaw_circle, and yaw_figure_eight groups using the complementary filter
+    3. Creates a zip file of the output directory for upload to Zenodo
+    
+    Args:
+        archive_dir: Directory containing subdirectories with raw datasets to consolidate (default: "data_archive")
+        output_dir: Output directory for the consolidated dataset (default: "data")
+        output_zip: Path for the output zip file (default: "data.zip")
+    
+    Returns:
+        None
+        
+    Example:
+        >>> prepare_for_zenodo()
+        >>> prepare_for_zenodo(archive_dir="recordings", output_dir="dataset", output_zip="wheelbot_dataset.zip")
+    """
+    import glob
+    import subprocess
+    import zipfile
+    
+    print("\n" + "=" * 80)
+    print("PREPARING DATASET FOR ZENODO UPLOAD")
+    print("=" * 80)
+    
+    # Step 1: Consolidate datasets
+    print("\n[Step 1/3] Consolidating datasets from archive...")
+    print("-" * 80)
+    
+    if not os.path.exists(archive_dir):
+        raise ValueError(f"Archive directory not found: {archive_dir}")
+    
+    # Get all subdirectories in the archive
+    archive_subdirs = [
+        d for d in os.listdir(archive_dir)
+        if os.path.isdir(os.path.join(archive_dir, d))
+    ]
+    
+    if not archive_subdirs:
+        raise ValueError(f"No subdirectories found in {archive_dir}")
+    
+    print(f"Found {len(archive_subdirs)} datasets to consolidate:")
+    for subdir in archive_subdirs:
+        print(f"  - {subdir}")
+    
+    # Consolidate all datasets
+    consolidate(
+        input_dataset_paths=[os.path.join(archive_dir, d) for d in archive_subdirs],
+        output_dataset_path=output_dir
+    )
+    
+    print("\n✓ Consolidation complete!")
+    
+    # Step 2: Fix yaw data using complementary filter
+    print("\n[Step 2/3] Fixing yaw data with complementary filter...")
+    print("-" * 80)
+    
+    # Find the fix_yaw_data.py script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    package_root = os.path.dirname(script_dir)
+    fix_yaw_script = os.path.join(package_root, "examples", "estimator", "fix_yaw_data.py")
+    
+    if not os.path.exists(fix_yaw_script):
+        print(f"Warning: fix_yaw_data.py script not found at {fix_yaw_script}")
+        print("Skipping yaw data correction step.")
+    else:
+        print(f"Running fix_yaw_data.py script...")
+        print(f"Script location: {fix_yaw_script}")
+        
+        # Change to the examples/estimator directory to run the script
+        original_cwd = os.getcwd()
+        estimator_dir = os.path.join(package_root, "examples", "estimator")
+        
+        try:
+            os.chdir(estimator_dir)
+            
+            # Run the fix_yaw_data.py script
+            result = subprocess.run(
+                ["python", "fix_yaw_data.py"],
+                capture_output=True,
+                text=True
+            )
+            
+            # Print the output
+            print(result.stdout)
+            
+            if result.returncode != 0:
+                print(f"Warning: fix_yaw_data.py exited with code {result.returncode}")
+                print("STDERR:", result.stderr)
+            else:
+                print("\n✓ Yaw data correction complete!")
+        
+        finally:
+            os.chdir(original_cwd)
+    
+    # Step 3: Create zip file
+    print("\n[Step 3/3] Creating zip file for Zenodo upload...")
+    print("-" * 80)
+    
+    if not os.path.exists(output_dir):
+        raise ValueError(f"Output directory not found: {output_dir}")
+    
+    # Remove existing zip file if it exists
+    if os.path.exists(output_zip):
+        print(f"Removing existing zip file: {output_zip}")
+        os.remove(output_zip)
+    
+    print(f"Creating {output_zip} from {output_dir}/...")
+    print("Excluding .pkl and .backup files...")
+    
+    # Create zip file
+    excluded_count = 0
+    added_count = 0
+    with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as zipf:
+        # Walk through the output directory
+        for root, dirs, files in os.walk(output_dir):
+            for file in files:
+                # Skip .pkl and .backup files
+                if file.endswith('.pkl') or file.endswith('.backup'):
+                    excluded_count += 1
+                    continue
+                
+                file_path = os.path.join(root, file)
+                # Calculate the archive name (relative path from parent of output_dir)
+                arcname = os.path.relpath(file_path, os.path.dirname(output_dir))
+                zipf.write(file_path, arcname)
+                added_count += 1
+                
+                # Print progress for large operations
+                if added_count % 100 == 0:
+                    print(f"  Added {added_count} files...")
+    
+    # Get zip file size
+    zip_size = os.path.getsize(output_zip)
+    zip_size_mb = zip_size / (1024 * 1024)
+    zip_size_gb = zip_size / (1024 * 1024 * 1024)
+    
+    if zip_size_gb >= 1:
+        size_str = f"{zip_size_gb:.2f} GB"
+    else:
+        size_str = f"{zip_size_mb:.2f} MB"
+    
+    print(f"\n✓ Zip file created successfully!")
+    print(f"  Location: {os.path.abspath(output_zip)}")
+    print(f"  Size: {size_str}")
+    print(f"  Files added: {added_count}")
+    print(f"  Files excluded: {excluded_count} (.pkl and .backup files)")
+    
+    # Print summary
+    print("\n" + "=" * 80)
+    print("PREPARATION COMPLETE!")
+    print("=" * 80)
+    print(f"\nDataset ready for Zenodo upload:")
+    print(f"  Zip file: {os.path.abspath(output_zip)}")
+    print(f"  Size: {size_str}")
+    print(f"\nNext steps:")
+    print(f"  1. Upload {output_zip} to Zenodo")
+    print(f"  2. Update DEFAULT_ZENODO_RECORD_ID in wheelbot_dataset/download.py")
+    print(f"  3. Update README.md with the Zenodo DOI")
+    print()
+
+
 if __name__ == "__main__":
     fire.Fire({
         "consolidate": consolidate,
         "statistics": statistics,
         "updaterates": updaterates,
+        "prepare_for_zenodo": prepare_for_zenodo,
     })
