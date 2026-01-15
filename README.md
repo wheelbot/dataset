@@ -9,7 +9,7 @@ We include two example implementations of how to use the dataset, i.e., for dyna
 A detailled description of this dataset is available in [the brief on arxiv](https://arxiv.org/abs/...).
 
 If you find this dataset helpful, please cite the Mini Wheelbot paper or dataset directly:
-```
+```bibtex
 @inproceedings{hose2025mini,
    title={The {Mini Wheelbot}: A Testbed for Learning-based Balancing, Flips, and Articulated Driving},
    booktitle={2025 IEEE International Conference on Robotics and Automation (ICRA)},
@@ -19,10 +19,10 @@ If you find this dataset helpful, please cite the Mini Wheelbot paper or dataset
 }
 
 @article{hose2026dataset,
-  title={The {Mini Wheelbot} Dataset: High-Fidelity Data for Robot Learning
+  title={The {Mini Wheelbot} Dataset: High-Fidelity Data for Robot Learning},
   author={Hose, Henrik and Weisgerber, Jan and Trimpe, Sebastian},
   journal={arXiv preprint arXiv:2502.04582},
-  year={2025}
+  year={2025},
 }
 ```
 
