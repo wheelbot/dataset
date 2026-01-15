@@ -158,7 +158,7 @@ def main():
     data_base_dir = os.path.normpath(data_base_dir)
     
     # Define the folders to process
-    folders_to_process = ['yaw_circle', 'yaw_figure_eight', 'yaw']
+    folders_to_process = ['yaw_circle', 'yaw_figure_eight', 'yaw', 'yaw_human']
     
     # Process each folder
     total_success = 0
