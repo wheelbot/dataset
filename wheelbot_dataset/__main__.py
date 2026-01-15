@@ -46,6 +46,7 @@ def main():
             "consolidate": consolidate_module.consolidate,
             "statistics": consolidate_module.statistics,
             "updaterates": consolidate_module.updaterates,
+            "prepare_for_zenodo": consolidate_module.prepare_for_zenodo,
         })
     elif command == "download":
         # Remove the 'download' command from argv so fire sees the subcommand
