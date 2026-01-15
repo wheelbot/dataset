@@ -12,9 +12,9 @@ import glob
 import numpy as np
 import pandas as pd
 
-# Import the Estimator from the examples/estimator module
+# Import the Estimator from the examples/state_estimation module
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'examples', 'estimator'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'examples', 'state_estimation'))
 from complementary_filter import Estimator
 
 

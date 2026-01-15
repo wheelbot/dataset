@@ -398,6 +398,50 @@ def updaterates(dataset_path: str, group_name: str, index: int):
     print()
 
 
+def anonymize_log_files(dataset_dir: str, ip_pattern: str = r'\d+\.\d+\.\d+\.\d+:\d+'):
+    """
+    Remove IP addresses from all .log files in a dataset directory.
+    
+    Args:
+        dataset_dir: Root directory of the dataset
+        ip_pattern: Regular expression pattern to match IP addresses (default matches IP:port format)
+    
+    Returns:
+        Tuple of (files_processed, ips_anonymized)
+    """
+    import re
+    import glob
+    
+    # Find all .log files recursively
+    log_files = glob.glob(os.path.join(dataset_dir, "**", "*.log"), recursive=True)
+    
+    files_processed = 0
+    total_ips_anonymized = 0
+    
+    for log_file in log_files:
+        try:
+            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+            
+            # Count how many IPs will be replaced
+            ips_found = len(re.findall(ip_pattern, content))
+            
+            if ips_found > 0:
+                # Replace IP addresses with [ANONYMIZED]
+                new_content = re.sub(ip_pattern, '[ANONYMIZED]', content)
+                
+                with open(log_file, 'w', encoding='utf-8') as f:
+                    f.write(new_content)
+                
+                files_processed += 1
+                total_ips_anonymized += ips_found
+        
+        except Exception as e:
+            print(f"Warning: Could not process {log_file}: {e}")
+    
+    return files_processed, total_ips_anonymized
+
+
 def prepare_for_zenodo(
     archive_dir: str = "data_archive",
     output_dir: str = "data",
@@ -406,10 +450,11 @@ def prepare_for_zenodo(
     """
     Prepare dataset for upload to Zenodo.
     
-    This function performs three main steps:
+    This function performs four main steps:
     1. Consolidates all datasets in the archive directory into a single output directory
     2. Fixes yaw data in yaw, yaw_circle, and yaw_figure_eight groups using the complementary filter
-    3. Creates a zip file of the output directory for upload to Zenodo
+    3. Anonymizes IP addresses in all .log files
+    4. Creates a zip file of the output directory for upload to Zenodo
     
     Args:
         archive_dir: Directory containing subdirectories with raw datasets to consolidate (default: "data_archive")
@@ -425,13 +470,14 @@ def prepare_for_zenodo(
     """
     import glob
     import zipfile
+    import re
     
     print("\n" + "=" * 80)
     print("PREPARING DATASET FOR ZENODO UPLOAD")
     print("=" * 80)
     
     # Step 1: Consolidate datasets
-    print("\n[Step 1/3] Consolidating datasets from archive...")
+    print("\n[Step 1/4] Consolidating datasets from archive...")
     print("-" * 80)
     
     if not os.path.exists(archive_dir):
@@ -459,7 +505,7 @@ def prepare_for_zenodo(
     print("\n✓ Consolidation complete!")
     
     # Step 2: Fix yaw data using complementary filter
-    print("\n[Step 2/3] Fixing yaw data with complementary filter...")
+    print("\n[Step 2/4] Fixing yaw data with complementary filter...")
     print("-" * 80)
     
     # Call the fix_yaw_data function directly
@@ -475,11 +521,26 @@ def prepare_for_zenodo(
         
     except Exception as e:
         print(f"Warning: Error during yaw data correction: {e}")
-        print("Continuing with zip file creation...")
+        print("Continuing with anonymization...")
 
     
-    # Step 3: Create zip file
-    print("\n[Step 3/3] Creating zip file for Zenodo upload...")
+    # Step 3: Anonymize IP addresses in log files
+    print("\n[Step 3/4] Anonymizing IP addresses in .log files...")
+    print("-" * 80)
+    
+    try:
+        files_processed, ips_anonymized = anonymize_log_files(output_dir)
+        
+        print(f"Processed {files_processed} log files")
+        print(f"Anonymized {ips_anonymized} IP addresses")
+        print("\n✓ IP anonymization complete!")
+        
+    except Exception as e:
+        print(f"Warning: Error during IP anonymization: {e}")
+        print("Continuing with zip file creation...")
+    
+    # Step 4: Create zip file
+    print("\n[Step 4/4] Creating zip file for Zenodo upload...")
     print("-" * 80)
     
     if not os.path.exists(output_dir):
