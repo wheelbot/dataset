@@ -15,7 +15,7 @@ import fire
 
 
 # Default Zenodo record ID (update this when the dataset is published)
-DEFAULT_ZENODO_RECORD_ID = None  # Will be set once dataset is published on Zenodo
+DEFAULT_ZENODO_RECORD_ID = "18234245"  # Will be set once dataset is published on Zenodo
 
 # Default dataset directory name
 DEFAULT_DATASET_DIR = "data"
