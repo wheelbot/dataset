@@ -8,7 +8,7 @@ to compare their long-term prediction accuracy.
 import jax
 import pickle
 from modellearning_common import load_dynamics_model
-from modellearning_multistep import rollout_model
+from modellearning_multistep_paper import rollout_model
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from matplotlib import rc
