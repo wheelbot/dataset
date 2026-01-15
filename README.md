@@ -20,9 +20,8 @@ If you find this dataset helpful, please cite the Mini Wheelbot paper and/or dat
 
 @article{hose2026dataset,
   title={The {Mini Wheelbot} Dataset: High-Fidelity Data for Robot Learning},
-  author={Hose, Henrik and Weisgerber, Jan and Trimpe, Sebastian},
-  journal={arXiv preprint arXiv:2502.04582},
-  year={2025},
+  author={Hose, Henrik and Brunzema, Paul, and Subhasish, Devdutt and Trimpe, Sebastian},
+  year={2026},
 }
 ```
 
