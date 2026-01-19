@@ -7,6 +7,8 @@ Experiments are performed across multiple hardware instances and on different su
 With this dataset, we hope to encourage researchers to use the Mini Wheelbot to benchmark their learning-based control methods, even without access to the real hardware.
 We include two example implementations of how to use the dataset, i.e., for dynamics learning and state estimation.
 A detailed description of this dataset is available in [the brief on arxiv](https://arxiv.org/pdf/2601.11394).
+The dataset is published on [Zenodo](https://zenodo.org/records/18260659).
+
 
 If you find this dataset helpful, please cite the Mini Wheelbot paper and/or dataset directly:
 ```bibtex
@@ -46,7 +48,7 @@ All data is recorded at 1000 Hz and includes:
 
 ## 📦 Installation
 
-### From PyPI (when published)
+### From PyPI
 ```bash
 pip install wheelbot-dataset
 ```
