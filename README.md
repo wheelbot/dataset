@@ -1,4 +1,5 @@
 # Wheelbot Dataset
+![Dataset Overview](./.assets/paper_figure_1.png)
 
 A large, high-quality dynamics dataset of the [Mini Wheelbot](https://github.com/wheelbot/Mini-Wheelbot).
 The dataset contains 1 kHz data of all onboard sensor readings, the estimated state, ground-truth pose measurements from a motion capture system, and a third-person view video of the experiment.
@@ -7,7 +8,7 @@ Experiments are performed across multiple hardware instances and on different su
 With this dataset, we hope to encourage researchers to use the Mini Wheelbot to benchmark their learning-based control methods, even without access to the real hardware.
 We include two example implementations of how to use the dataset, i.e., for dynamics learning and state estimation.
 A detailed description of this dataset is available in [the brief on arxiv](https://arxiv.org/pdf/2601.11394).
-The dataset is published on [Zenodo](https://zenodo.org/records/18260659).
+The dataset is published on [Zenodo](https://zenodo.org/records/18234244).
 
 
 If you find this dataset helpful, please cite the Mini Wheelbot paper and/or dataset directly:
