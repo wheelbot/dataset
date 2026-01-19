@@ -1,5 +1,5 @@
-# Wheelbot Dataset
-![Dataset Overview](./.assets/paper_figure_1.png)
+# The Mini Wheelbot Dataset
+<img src="./.assets/paper_figure_1.png" align="left" height="240px" style="margin-right: 30px; margin-bottom: 10px;">
 
 A large, high-quality dynamics dataset of the [Mini Wheelbot](https://github.com/wheelbot/Mini-Wheelbot).
 The dataset contains 1 kHz data of all onboard sensor readings, the estimated state, ground-truth pose measurements from a motion capture system, and a third-person view video of the experiment.
@@ -37,6 +37,8 @@ The Wheelbot Dataset contains trajectory data from a self-balancing wheeled robo
 - **Velocity experiments**: Forward/backward velocity tracking
 - **Combined experiments**: Velocity + roll, velocity + pitch
 - **Yaw experiments**: Random yaw control, circular trajectories, figure-eight patterns
+
+<p align='center'> <img src="./.assets/paper_table_1.png" height="200px"> </p>
 
 All data is recorded at 1000 Hz and includes:
 - IMU data (4x gyroscopes, 4x accelerometers)
